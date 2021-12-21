@@ -1,0 +1,160 @@
+$themes: (
+        light: (
+                white: #f0f0f0,
+                font: #a8a9bb,
+                black: #223,
+                main-black: #2c2c42,
+        )
+);
+//遍历主题map
+@mixin themeify {
+
+  @each $theme-name,
+  $theme-map in $themes {
+    //!global 把局部变量强升为全局变量
+    $theme-map: $theme-map !global;
+
+    //这步是判断html的data-theme的属性值  #{}是sass的插值表达式
+    //& sass嵌套里的父容器标识   @content是混合器插槽，像vue的slot
+    [data-theme="#{$theme-name}"] & {
+      @content;
+    }
+  }
+}
+
+//声明一个根据Key获取颜色的function
+@function themed($key) {
+  @return map-get($theme-map, $key);
+}
+
+//获取背景颜色
+@mixin background_color($color) {
+  @include themeify {
+    background: themed($color) !important;
+    background-color: themed($color) !important;
+  }
+}
+
+//获取字体颜色
+@mixin font_color($color) {
+  @include themeify {
+    color: themed($color) !important
+  }
+}
+
+//获取边框颜色
+@mixin border_color($color) {
+  @include themeify {
+    border-color: themed($color) !important
+  }
+}
+
+.app-wrapper {
+  @include background_color(main-black);
+  @include font_color(font);
+}
+
+.header-title .title {
+  @include font_color(font);
+}
+
+.tools {
+  @include background_color(black);
+}
+.filter{
+  @include border_color(main-black);
+  @include background_color(black);
+}
+.eadmin-form {
+  @include background_color(black);
+}
+
+.ant-table, .ant-table-fixed, .ant-table-thead > tr > th,tr.ant-table-expanded-row, .pagination {
+  @include background_color(black);
+  @include font_color(font);
+  @include border_color(main-black);
+}
+.ant-table-cell-fix-left, .ant-table-cell-fix-right{
+  @include background_color(black);
+}
+.ant-dropdown-menu{
+  @include background_color(black);
+}
+.ant-dropdown-menu-item, .ant-dropdown-menu-submenu-title{
+  @include font_color(font);
+}
+.ant-dropdown-menu-item:hover, .ant-dropdown-menu-submenu-title:hover{
+  @include background_color(main-black);
+}
+.el-table th{
+  @include background_color(black);
+}
+.el-table thead{
+  @include font_color(font);
+}
+.el-table th.is-leaf, .el-table td{
+  @include border_color(main-black);
+}
+.ant-table-tbody> tr > td{
+  @include border_color(main-black);
+  @include background_color(black);
+
+}
+.el-table--enable-row-hover .el-table__body tr:hover > td{
+  @include background_color(main-black);
+}
+.ant-table-thead > tr.ant-table-row-hover:not(.ant-table-expanded-row):not(.ant-table-row-selected) > td, .ant-table-tbody > tr.ant-table-row-hover:not(.ant-table-expanded-row):not(.ant-table-row-selected) > td, .ant-table-thead > tr:hover:not(.ant-table-expanded-row):not(.ant-table-row-selected) > td, .ant-table-tbody > tr:hover:not(.ant-table-expanded-row):not(.ant-table-row-selected) > td{
+  @include background_color(main-black);
+}
+.ant-table-tbody > tr.ant-table-row-selected td{
+  @include background_color(main-black);
+}
+.ant-table-placeholder{
+  @include background_color(black);
+  @include font_color(font);
+  @include border_color(main-black);
+}
+.header-container{
+  @include background_color(black);
+  @include font_color(font);
+}
+.menu, .menu .el-menu-item{
+  @include background_color(black);
+  @include font_color(font);
+}
+.sidebar-logo-container{
+  @include background_color(black);
+}
+.sidebar-container{
+  @include font_color(font);
+  @include background_color(black);
+}
+
+.tagsView{
+  @include font_color(font);
+  @include background_color(black);
+  @include border_color(main-black);
+}
+.back{
+  @include border_color(main-black);
+}
+.tagsView .activte{
+  @include font_color(font);
+  @include background_color(main-black);
+}
+input{
+  @include background_color(black);
+}
+.el-button{
+
+  @include font_color(white);
+}
+.el-button:hover{
+  @include font_color(white);
+}
+
+
+
+
+
+

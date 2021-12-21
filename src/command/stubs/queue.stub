@@ -1,0 +1,22 @@
+<?php
+
+
+namespace app\common\queue;
+use Eadmin\Queue;
+
+class $className extends Queue
+{
+
+    /**
+     * 执行任务
+     * @param $data
+     * @return bool
+     */
+    public function handel($data): bool
+    {
+        /**  do some
+            $this->progress('任务进行中',10);
+        **/
+        return true;
+    }
+}

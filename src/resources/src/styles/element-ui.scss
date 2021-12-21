@@ -1,0 +1,95 @@
+@import './element-variables.scss';
+.el-submenu [class^="fa fa-"] {
+  vertical-align: middle;
+  margin-right: 5px;
+  width: 24px;
+  text-align: center;
+  font-size: 18px;
+}
+.el-menu-item [class^="fa fa-"] {
+  vertical-align: middle;
+  margin-right: 5px;
+  width: 24px;
+  text-align: center;
+  font-size: 18px;
+}
+.el-button [class*="fa fa-"] + span {
+  margin-left: 5px;
+}
+.el-table__fixed::before, .el-table__fixed-right::before {
+  z-index: 3;
+}
+.ant-switch {
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,.065),0 2px 2px 0 rgba(0,0,0,.065),0 1px 5px 1px rgba(0,0,0,.065);
+}
+.el-button{
+  border-radius: 4px;
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,.065),0 2px 2px 0 rgba(0,0,0,.065),0 1px 5px 1px rgba(0,0,0,.065);
+  margin-right: 10px;
+}
+.el-button--default{
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,.03),0 2px 2px 0 rgba(0,0,0,.03),0 1px 5px 1px rgba(0,0,0,.01);
+}
+.el-button.is-plain{
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,.03),0 2px 2px 0 rgba(0,0,0,.03),0 1px 5px 1px rgba(0,0,0,.01);
+}
+.el-button--text{
+  box-shadow:none;
+}
+.el-button--primary{
+  border-color: #b3d8ff;
+}
+.el-button + .el-button {
+  margin-left: auto;
+}
+.el-row {
+  margin-bottom: 10px;
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+.ant-table-body{
+  overflow-x: auto!important;
+}
+.el-drawer .el-drawer__body {
+   overflow-y: auto;
+}
+@media screen and (max-width: 480px) {
+  .el-message-box {
+    width: 95% !important;
+  }
+  .el-message {
+    min-width: 300px !important;
+  }
+}
+@media screen and (max-width: 480px) {
+  .el-overlay .el-dialog {
+    width: 95% !important;
+  }
+  .el-overlay .el-dialog .el-dialog__body {
+    overflow: auto
+  }
+  .el-overlay .el-drawer {
+    width: 95% !important;
+  }
+  .el-overlay .el-drawer .el-drawer__body {
+    overflow: auto
+  }
+}
+.el-card{
+  overflow: visible;
+}
+.el-dialog__body {
+  padding: 15px 20px 10px 10px;
+}
+.dialogTableClass .el-dialog__body {
+  padding: 0!important;
+}
+.el-check-tag{
+  font-size: 12px;
+  line-height: 12px;
+}
+.el-check-tag.is-checked {
+  background-color: #53a8ff;
+  color: #ffffff;
+}

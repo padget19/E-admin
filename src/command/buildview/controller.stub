@@ -1,0 +1,97 @@
+<?php
+
+namespace {%namespace%};
+
+use Eadmin\Controller;
+use Eadmin\form\Form;
+use Eadmin\grid\Actions;
+use Eadmin\component\form\FormAction;
+use Eadmin\detail\Detail;
+use Eadmin\grid\Filter;
+use Eadmin\grid\Grid;
+{%model_namespace%}
+
+/**
+ *
+ * Class {%className%}
+ * @package {%namespace%}
+ */
+class {%className%} extends Controller
+{
+    protected $title = '标题';
+
+    /**
+     * 列表
+     * @auth true
+     * @login true
+     * @return Grid
+     */
+    public function index() : Grid
+    {
+        return Grid::create(new {%model%}, function (Grid $grid){
+            $grid->title($this->title);
+{%grid%}
+            $grid->quickSearch();
+            $grid->setForm($this->form())->dialog();
+            $grid->setDetail($this->detail());
+            // 工具栏内容（可html组件嵌套）
+            // $grid->tools('');
+            // 头部内容（可html组件嵌套）
+            // $grid->header('');
+            // 操作工具栏
+            $grid->actions(function (Actions $action, $data) {
+
+            });
+            // 删除前回调
+            $grid->deling(function ($ids, $trueDelete) {
+
+            });
+            // 更新前回调
+            $grid->updateing(function ($ids, $data) {
+
+            });
+        });
+    }
+
+    /**
+     * 表单
+     * @auth true
+     * @login true
+     * @return Form
+     */
+    public function form() : Form
+    {
+         return Form::create(new {%model%},function (Form $form){
+            $form->title($this->title);
+{%form%}
+            // 操作栏
+			$form->actions(function (FormAction $action) {
+			    // 隐藏重置按钮
+                // $action->hideResetButton();
+			});
+            // 保存前回调
+            $form->saving(function ($post) {
+
+            });
+            // 保存后回调
+            $form->saved(function ($post, $data) {
+
+            });
+         });
+    }
+
+    /**
+     * 详情
+     * @auth true
+     * @login true
+     * @param int $id
+     * @return Detail
+     */
+     public function detail($id=0) : Detail
+     {
+        return Detail::create(new {%model%},$id,function (Detail $detail){
+            $detail->title($this->title);
+{%detail%}
+        });
+     }
+}

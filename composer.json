@@ -1,0 +1,57 @@
+{
+  "name": "rockys/e-admin",
+  "description": "ThinkPhP E-admin",
+  "license": "MIT",
+  "keywords": [
+    "E-admin",
+    "thinkphp",
+    "CURD"
+  ],
+  "authors": [
+    {
+      "name": "rocky",
+      "email": "631670747@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1.0",
+    "topthink/framework": "^6.0.0",
+    "topthink/think-migration": "^3.0",
+    "topthink/think-multi-app": "^1.0",
+    "topthink/think-view": "^1.0",
+    "iidestiny/flysystem-oss": "^2.0",
+    "overtrue/flysystem-qiniu": "^1.0",
+    "symfony/finder": "v4.4.9",
+    "symfony/filesystem": "v5.2.4",
+    "guzzlehttp/guzzle": "~7.0",
+    "phpoffice/phpspreadsheet": "^1.17",
+    "ifsnop/mysqldump-php": "^2.9",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-gd": "*",
+    "ext-openssl": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Eadmin\\": "src"
+    },
+    "psr-0": {
+      "": "src/extend"
+    },
+    "files": [
+      "src/helpers.php"
+    ]
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "@php think eadmin:publish"
+    ]
+  },
+  "extra": {
+    "think": {
+      "services": [
+        "Eadmin\\ServiceProvider"
+      ]
+    }
+  }
+}

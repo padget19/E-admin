@@ -1,0 +1,95 @@
+
+.sidebar-container{
+  width: $sideBarWidth;
+  background-color: $subMenuBg;
+  box-shadow: 0px 8px 14.72px 1.28px rgba(229, 228, 230, 0.5);
+  border-right: 1px solid #e3e3e3;
+  height: 100%;
+  transition: width .28s ease-in-out;
+  .horizontal-collapse-transition {
+    transition: 0s width ease-in-out, 0s padding-left ease-in-out, 0s padding-right ease-in-out;
+  }
+  .el-menu {
+    border-right: 0px!important;
+  }
+  .el-submenu__title {
+    background-color: $subMenuHover !important;
+  }
+  // menu hover
+  .el-submenu .el-submenu__title {
+    span {
+      transition: all 0.3s;
+      -webkit-transition: all 0.3s;
+    }
+    i{
+      transition: all 0.3s;
+      -webkit-transition: all 0.3s;
+    }
+    &:hover {
+      border-left: 3px solid $--color-primary!important;
+      span {
+        margin-left: 5px;
+      }
+      i {
+        margin-left: 5px;
+      }
+    }
+
+  }
+  .el-menu-item.is-active {
+    color: #FFFFFF;
+    box-shadow: 0 0 10px 1px rgba($--color-primary,.7);
+    border-radius: 5px !important;
+    background: linear-gradient(to right,$--color-primary,rgba($--color-primary,1),rgba($--color-primary,.7)) !important;
+  }
+  .is-active>.el-submenu__title {
+    border-left: 3px solid $--color-primary!important;
+  }
+  & .nest-menu .el-submenu>.el-submenu__title,
+  & .el-menu-item {
+    span {
+      transition: all 0.3s;
+      -webkit-transition: all 0.3s;
+    }
+    i{
+      transition: all 0.3s;
+      -webkit-transition: all 0.3s;
+    }
+    //min-width: $sideBarWidth !important;
+    background-color: $subMenuBg !important;
+    &:hover {
+      span {
+        margin-left: 5px;
+        color: $--color-primary !important;
+      }
+      i{
+        margin-left: 5px;
+        color: $menuActiveText !important;
+      }
+    }
+  }
+  & .nest-menu .el-submenu>.el-submenu__title,
+  &  .el-menu-item.is-active {
+    margin: 10px 10px!important;
+    &:hover {
+      span {
+        color: $menuText !important;
+      }
+      i{
+        color: $menuText !important;
+      }
+    }
+  }
+}
+.collapse{
+  & .nest-menu .el-submenu>.el-submenu__title,
+  &  .el-menu-item.is-active {
+    margin: 0!important;
+    border-radius: 0 !important;
+  }
+}
+.mobile .sidebar-container {
+  position: fixed;
+  z-index: 9999;
+}
+
