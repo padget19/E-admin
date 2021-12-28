@@ -51,7 +51,7 @@ class FormSteps extends Steps
     {
         $formItems = $this->form->collectFields($closure);
         $this->step($title, $description, $icon);
-        $html = Html::create()->tag('div')->style(['margin:40px 80px 0px 80px']);
+        $html = Html::div()->attr('setpItem',true)->style(['margin:40px 80px 0px 80px']);
         $active = $this->bindAttr('current');
         foreach ($formItems as $item) {
             $count = count($this->content['default']) - 1;

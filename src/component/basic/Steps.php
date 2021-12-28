@@ -12,6 +12,7 @@ class Steps extends Component
 
     public function __construct($value=0)
     {
+        parent::__construct();
         $this->bindAttValue('current',$value);
     }
     /**

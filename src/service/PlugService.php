@@ -9,26 +9,52 @@
 namespace Eadmin\service;
 
 use Composer\Autoload\ClassLoader;
+use Eadmin\component\basic\Button;
+use Eadmin\PlugServiceProvider;
 use GuzzleHttp\Client;
+use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Cookie\SetCookie;
 use GuzzleHttp\Exception\RequestException;
 use think\App;
 use think\facade\Cache;
 use think\facade\Console;
 use think\facade\Db;
+use think\facade\Request;
 use think\helper\Arr;
-use Eadmin\Service;
 
-class PlugService extends Service
+class PlugService
 {
+    /**
+     * 插件基础目录
+     * @var string
+     */
     protected $plugPathBase = '';
+    /**
+     * 插件目录集合
+     * @var array
+     */
     protected $plugPaths = [];
     protected $plugs = [];
     protected static $loader;
-    protected $installedPlug = [];
-
-    public function __construct(App $app)
+    /**
+     * 插件服务集合
+     * @var array
+     */
+    protected $serviceProvider = [];
+    protected $client;
+    protected $loginKey = '';
+    protected $table = 'system_plugs';
+    public function __construct()
     {
-        parent::__construct($app);
+        $this->initialize();;
+    }
+    protected function initialize()
+    {
+        $this->app  = app();
+        $this->client = new Client([
+            'base_uri' => 'https://eadmin.togy.com.cn/api/',
+            'verify' => false,
+        ]);
         $this->plugPathBase = app()->getRootPath() . config('admin.extension.dir', 'eadmin-plugs');
 
         foreach (glob($this->plugPathBase . '/*') as $file) {
@@ -40,8 +66,38 @@ class PlugService extends Service
             }
         }
 
+        $this->loginKey = md5(Request::header('Authorization').'plug');
     }
 
+    /**
+     * 是否登录
+     * @return bool
+     */
+    public function isLogin(){
+        return Cache::has($this->loginKey);
+    }
+    /**
+     * 登录
+     * @param string $username 账号
+     * @param string $password 密码
+     * @return mixed
+     */
+    public function login($username,$password){
+        $response = $this->client->post('plugs/login',[
+            'form_params'=>[
+                'username'=>$username,
+                'password'=>$password,
+            ]
+        ]);
+        $content = $response->getBody()->getContents();
+        $res = json_decode($content, true);
+        if($res['code'] == 200){
+            Cache::set($this->loginKey,$res['data'],60*60*24);
+            return true;
+        }else{
+            return false;
+        }
+    }
     /**
      * 获取插件目录
      * @return string
@@ -74,24 +130,25 @@ class PlugService extends Service
         foreach ($this->plugPaths as $plugPaths) {
             $file = $plugPaths . DIRECTORY_SEPARATOR . 'composer.json';
             if (is_file($file)) {
-                $arr  = json_decode(file_get_contents($file), true);
-                $plugs[]  = $arr;
+                $arr = $this->parseComposer($file);
+                $plugs[] = $arr;
             }
         }
-        $names = array_column($plugs,'name');
+        $names = array_column($plugs, 'name');
 
         try {
-            $plugNames = Db::name('system_plugs')->whereIn('name', $names)->where('status',1)->column('name');
-        }catch (\Exception $exception){
+            $plugNames = Db::name($this->table)->whereIn('name', $names)->where('status', 1)->column('name');
+        } catch (\Exception $exception) {
             $plugNames = [];
         }
         foreach ($this->plugPaths as $plugPaths) {
             $file = $plugPaths . DIRECTORY_SEPARATOR . 'composer.json';
             if (is_file($file)) {
-                $arr  = json_decode(file_get_contents($file), true);
+                $arr = $this->parseComposer($file);
+                $arr['plug_path'] = $plugPaths;
                 $psr4 = Arr::get($arr, 'autoload.psr-4');
                 $name = Arr::get($arr, 'name');
-                if (in_array($name,$plugNames)) {
+                if (in_array($name, $plugNames)) {
                     if ($psr4) {
                         foreach ($psr4 as $namespace => $path) {
                             $path = $plugPaths . '/' . trim($path, '/') . '/';
@@ -99,8 +156,16 @@ class PlugService extends Service
                         }
                     }
                     $serviceProvider = Arr::get($arr, 'extra.e-admin');
+
                     if ($serviceProvider) {
+                        $configPath = $plugPaths . DIRECTORY_SEPARATOR . 'src'.DIRECTORY_SEPARATOR . 'config.php';
                         $this->app->register($serviceProvider);
+                        $service = $this->app->getService($serviceProvider);
+                        $this->serviceProvider[$name] = $service;
+                        $this->app->bind($serviceProvider,$service);
+                        if(method_exists($service,'withComposerProperty')){
+                            $service->withComposerProperty($arr);
+                        }
                     }
                 }
             }
@@ -108,46 +173,75 @@ class PlugService extends Service
     }
 
     /**
+     * @param $file
+     * @return mixed
+     */
+    protected function parseComposer($file){
+        return json_decode(file_get_contents($file), true);
+    }
+
+    /**
+     * 获取注册插件服务
+     * @param null $name 插件名称
+     * @return PlugServiceProvider
+     */
+    public function getServiceProviders($name = null){
+        if(empty($name)){
+            return $this->serviceProvider;
+        }
+        return $this->serviceProvider[$name];
+    }
+    public function getCate()
+    {
+        $response = $this->client->get("Plugs/cate");
+        $content = $response->getBody()->getContents();
+        $content = json_decode($content, true);
+        return $content['data'];
+    }
+
+    /**
      * 获取所有插件
      * @param string $search 搜索的关键词
      */
-    public function all($search = '')
+    public function all($search = '', $cate_id = 0, $page = 1, $size = 20, $names = null)
     {
-        $cacheKey = 'eadmin_plugs_' . $search;
-        $plugs    = Cache::get($cacheKey);
-        if (!$plugs) {
-            $plugs = GitlabService::instance()->getGroupProject(57, $search, 1, 100);
-        }
+        $response = $this->client->get("plugs/list", [
+            'query' => [
+                'cate_id' => $cate_id,
+                'page' => $page,
+                'size' => $size,
+                'search' => $search,
+                'names' => $names,
+            ]
+        ]);
+
+        $content = $response->getBody()->getContents();
+        $content = json_decode($content, true);
+        $plugs = $content['data']['data'];
         $delNames = [];
-        foreach ($plugs as $plug) {
-            if (isset($plug['composer'])) {
-                $content = $plug['composer'];
-            } else {
-                $content = GitlabService::instance()->getFile($plug['id'], 'composer.json');
-            }
-            if ($content) {
-                $info                = $this->getInfo($content);
-                $info['composer']    = $content;
-                $info['id']          = $plug['id'];
-                $info['title']       = $plug['title'] ?? $plug['name'];
-                $info['web_url']     = $plug['web_url'];
-                $info['description'] = $plug['description'];
-                $info['download']    = "https://gitlab.my8m.com/api/v4/projects/{$plug['id']}/repository/archive.zip?sha=eadmin";
-                $this->plugs[]       = $info;
-                if (!is_dir($info['path'])) {
-                    $info['status'] = false;
-                    $delNames[]     = trim($info['name']);
-                };
-                if ($info['install']) {
-                    $this->installedPlug[] = $info;
+        foreach ($plugs as &$plug) {
+            $status = $this->getInfo($plug['composer'], 'status');
+            if(isset($this->serviceProvider[$plug['composer']])){
+                $service = $this->serviceProvider[$plug['composer']];
+                if(method_exists($service,'setting')){
+                    $plug['setting'] = app()->invoke([$service,'setting']);
                 }
             }
+            $plug['status'] = $status ?? false;
+            $plug['install_version'] = $this->getInfo($plug['composer'], 'version');
+            $plug['install'] = is_numeric($status) ? true : false;
+            $plug['path'] = $this->plugPathBase . '/' . $plug['composer'];
+            $this->plugs[] = $plug;
+            if (!is_dir($plug['path'])) {
+                $plug['status'] = false;
+                $delNames[] = trim($plug['composer']);
+            };
         }
-        Db::name('system_plugs')->whereIn('name', $delNames)->delete();
-        if (!Cache::has($cacheKey)) {
-            Cache::set($cacheKey, $this->plugs, 60 * 5);
-        }
-        return $this->plugs;
+        Db::name($this->table)->whereIn('name', $delNames)->delete();
+        return [
+            'list'=>$this->plugs,
+            'total'=>$content['data']['total']
+        ];
     }
 
     /**
@@ -155,50 +249,65 @@ class PlugService extends Service
      * @param string $search 搜索的关键词
      * @return array
      */
-    public function installed($search = '')
+    public function installed($search = '', $page = 1, $size = 20)
     {
-        if (count($this->plugs) == 0) {
-            $this->all($search);
+        $names = Db::name($this->table)->column('name');
+        if (count($names) == 0) {
+            return  [
+                'list'=>[],
+                'total'=>0
+            ];
         }
-        return $this->installedPlug;
-    }
+        $installedPlugs = $this->all($search, 0, $page, $size, $names)['list'];
 
-    /**
-     * 获取信息
-     * @param mixed $content 内容
-     * @return array
-     */
-    protected function getInfo($content)
-    {
-        $arr     = json_decode($content, true);
-        $version = '1.0.0';
-        $authors = array_column(Arr::get($arr, 'authors'), 'name');
-        $authors = implode(',', $authors);
-        $emails  = array_column(Arr::get($arr, 'authors'), 'email');
-        $emails  = implode(',', $emails);
-        $name    = Arr::get($arr, 'name');
-        $status  = $this->status($name);
-        return [
-            'name'        => $name,
-            'description' => Arr::get($arr, 'description'),
-            'author'      => $authors,
-            'email'       => $emails,
-            'status'      => $status ?? false,
-            'install'     => is_null($status) ? false : true,
-            'version'     => $version,
-            'path'        => $this->plugPathBase . '/' . $name,
+        foreach ($this->plugPaths as $plugPaths) {
+            $file = $plugPaths . DIRECTORY_SEPARATOR . 'composer.json';
+            if (is_file($file)) {
+                $arr = json_decode(file_get_contents($file), true);
+                $plugs[] = $arr;
+            }
+        }
+        $onlinePlugNames = array_column($installedPlugs, 'composer');
+        $plugnames = array_column($plugs, 'name');
+        $names = array_diff($plugnames, $onlinePlugNames);
+        foreach ($names as $name) {
+            $index = array_search($name,$plugnames);
+            $plug = [];
+            $status = $this->getInfo($name, 'status');
+            $plug['name']=  $plugs[$index]['description'];
+            $plug['desc']=  '';
+            $plug['status'] = $status ?? false;
+            $plug['install_version'] = '本地插件';
+            $plug['install'] = is_numeric($status) ? true : false;
+            $plug['path'] = $this->plugPathBase . '/' . $name;
+            $plug['composer'] = $name;
+            $plug['version'] = [
+                [
+                    'version'=>'本地插件',
+                    'desc'=>'',
+                    'require'=>[]
+                ]
+            ];
+            if($plug['install']){
+                $installedPlugs[] = $plug;
+            }
+        }
+        return  [
+            'list'=>$installedPlugs,
+            'total'=>count($installedPlugs)
         ];
     }
 
     /**
      * 插件状态
      * @param string $name 插件名称
+     * @param string $field 字段
      * @return mixed
      */
-    public function status($name)
+    public function getInfo($name, $field = 'status')
     {
         try {
-            return Db::name('system_plugs')->where('name', $name)->value('status');
+            return Db::name($this->table)->where('name', $name)->cache(60)->value($field,null);
         } catch (\Exception $exception) {
             return false;
         }
@@ -213,7 +322,8 @@ class PlugService extends Service
      */
     public function enable($name, $status)
     {
-        return Db::name('system_plugs')->where('name', $name)->update(['status' => $status]);
+        Db::name('system_menu')->where('mark',$name)->update(['status' => $status]);
+        return Db::name($this->table)->where('name', $name)->update(['status' => $status]);
     }
 
     /**
@@ -228,7 +338,6 @@ class PlugService extends Service
         if (
             !is_dir($directory . '/src')
             || !is_file($directory . '/composer.json')
-            || !is_file($directory . '/version.php')
         ) {
             return false;
         }
@@ -243,26 +352,38 @@ class PlugService extends Service
      */
     protected function dataMigrate($cmd, $path)
     {
-        $migrations = $path . DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'database' . DIRECTORY_SEPARATOR . 'migrations';
+        $migrations = $path . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
         if (is_dir($migrations)) {
             Console::call('migrate:eadmin', ['cmd' => $cmd, 'path' => $migrations]);
         }
 
         return true;
     }
-
+    protected function loginSession(){
+        $cookies = Cache::get($this->loginKey);
+        $cookieJar = new CookieJar();
+        foreach ($cookies as $cookie){
+            $cookieJar->setCookie(new SetCookie($cookie));
+        }
+        return $cookieJar;
+    }
     /**
      * 安装
      * @param string $name 插件名称
      * @param string $path 插件目录
+     * @param string $version 版本
      * @return mixed
      */
-    public function install($name, $path)
+    public function install($name, $path, $version)
     {
+
         try {
-            $client  = new Client(['verify' => false]);
+            $client = new Client(['verify' => false]);
             $plugZip = app()->getRootPath() . 'plug' . time() . '.zip';
-            $client->get($path, ['save_to' => $plugZip]);
+            $client->get($path, [
+                'cookies'=>$this->loginSession(),
+                'save_to' => $plugZip
+            ]);
             $zip = new \ZipArchive();
             if ($zip->open($plugZip) === true) {
                 $path = $this->plugPathBase . '/' . $name;
@@ -272,11 +393,11 @@ class PlugService extends Service
                 for ($i = 0; $i < $zip->numFiles; $i++) {
                     if ($i > 0) {
                         $filename = $zip->getNameIndex($i);
-                        $pathArr  = explode('/', $filename);
+                        $pathArr = explode('/', $filename);
                         array_shift($pathArr);
                         $pathName = implode('/', $pathArr);
                         $fileInfo = pathinfo($filename);
-                        $toFile   = $path . '/' . $pathName;
+                        $toFile = $path . '/' . $pathName;
                         if (isset($fileInfo['extension'])) {
                             copy("zip://" . $plugZip . "#" . $filename, $toFile);
                         } else {
@@ -292,9 +413,18 @@ class PlugService extends Service
                 if (is_dir($seed)) {
                     Console::call('seed:eadmin', ['path' => $seed]);
                 }
-                Db::name('system_plugs')->insert([
+
+                //插件注册
+                Db::name($this->table)->insert([
                     'name' => trim($name),
+                    'version' => $version
                 ]);
+                $this->initialize();
+                $this->register();
+                //添加菜单
+                $file = $path. DIRECTORY_SEPARATOR . 'composer.json';
+                $serviceProvider = $this->getServiceProviders($name);
+                $serviceProvider->addMenus();
                 return true;
             } else {
                 return false;
@@ -313,8 +443,10 @@ class PlugService extends Service
     {
         $this->dataMigrate('rollback', $path);
         FileSystemService::instance()->delFiels($path);
-        Db::name('system_plugs')->where('name', $name)->delete();
+        Db::name($this->table)->where('name', $name)->delete();
         Db::name('system_menu')->where('mark', $name)->delete();
+        Db::name('system_config')->where('mark', $name)->delete();
+        Db::name('system_config_cate')->where('mark', $name)->delete();
         return true;
     }
 }

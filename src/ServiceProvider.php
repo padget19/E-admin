@@ -11,13 +11,20 @@ namespace Eadmin;
 
 use Eadmin\component\basic\Message;
 use Eadmin\component\basic\Notification;
+use Eadmin\controller\Crontab;
 use Eadmin\controller\FileSystem;
 use Eadmin\controller\ResourceController;
 use Eadmin\controller\Queue;
+use Eadmin\facade\Schedule;
 use Eadmin\middleware\Response;
+use Eadmin\model\SystemFile;
+use Eadmin\service\BackupData;
 use Eadmin\service\MenuService;
 use Eadmin\service\QueueService;
+use Symfony\Component\Finder\Finder;
+use think\facade\Console;
 use think\facade\Db;
+
 use think\route\Resource;
 use think\Service;
 use Eadmin\controller\Backup;
@@ -34,71 +41,101 @@ class ServiceProvider extends Service
 {
     public function register()
     {
+        //json压缩
+        $this->zlib();
+        $this->registerService();
+        //注册上传路由
+        FileService::instance()->registerRoute();
+        //注册插件
+        Admin::plug()->register();
+        //视图路由
+        Admin::registerRoute();
+        //权限中间件
+        $this->app->middleware->route(\Eadmin\middleware\Permission::class);
+
+    }
+    //检测静态文件版本发布
+    protected function publishVersion(){
+        $file = __DIR__.'/../.env';
+        $systemEnv = Env::load($file);
+        $envFile = app()->getRootPath().'public/eadmin/.env';
+        if(is_file($file)){
+            $env =  Env::load($envFile);
+            //版本检测
+            if($systemEnv->get('VERSION') != $env->get('VERSION')){
+                Console::call('eadmin:publish',['-f','-p']);
+                $env->set('VERSION',$systemEnv->get('VERSION'));
+                $env->save($envFile);
+            }
+            //主题色切换
+            $color = config('admin.theme.color','#409EFF');
+            if($color != $env->get('THEME_COLOR','#409EFF')){
+                $finder = new Finder();
+                $dir = app()->getRootPath().'public/eadmin/static/';
+                foreach ($finder->in($dir)->name(['*.css','*.js']) as $file) {
+                    $filePath = $file->getRealPath();
+                    $content = file_get_contents($filePath);
+                    $theme = $env->get('THEME_COLOR');
+                    $themeRgb= hex2rgba($theme);
+                    $themeRgb = implode(',',$themeRgb);
+                    $rgb= hex2rgba($color);
+                    $rgb = implode(',',$rgb);
+                    $findArr = [$theme,$themeRgb];
+                    $replaceArr = [$color,$rgb];
+                    for ($i=10;$i<=90;$i+=10){
+                        $findArr[] = color_mix('#FFFFFF',$theme,$i);
+                        $replaceArr[] = color_mix('#FFFFFF',$color,$i);
+                    }
+                    $findArr[] = color_mix('#000000',$theme,10);
+                    $replaceArr[] = color_mix('#000000',$color,10);
+                    $content = str_ireplace($findArr,$replaceArr,$content);
+                    $res = file_put_contents($filePath,$content);
+                }
+                $env->set('THEME_COLOR',$color);
+                $env->save($envFile);
+            }
+        }
+    }
+    protected function zlib(){
         header("Access-Control-Allow-Origin:*");
         if (extension_loaded('zlib')) {
             if (isset($_SERVER['HTTP_ACCEPT_ENCODING']) and strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== FALSE) {
                 ob_start('ob_gzhandler');
             }
         }
-        //注册上传路由
-        FileService::instance()->registerRoute();
-        //注册插件
-        PlugService::instance()->register();
-        $this->app->middleware->route(\Eadmin\middleware\Permission::class);
-        $this->registerView();
-        $this->registerService();
     }
-
-    public function registerService()
+    protected function registerService()
     {
         $this->app->bind([
+            'admin.plug'         => PlugService::class,
             'admin.menu'         => MenuService::class,
             'admin.message'      => Message::class,
             'admin.notification' => Notification::class,
         ]);
     }
+    protected function crontab(){
+        try{
+            Schedule::call('数据库备份和定时清理excel目录',function () {
+                //数据库备份
+                if(sysconf('databackup_on') == 1){
+                    BackupData::instance()->backup();
+                    $list = BackupData::instance()->getBackUpList();
+                    if(count($list) > sysconf('database_number')){
+                        $backData = array_pop($list);
+                        BackupData::instance()->delete($backData['id']);
+                    }
+                }
+                //定时清理excel目录
+                $fileSystem = new \Symfony\Component\Filesystem\Filesystem();
+                $fileSystem->remove(app()->getRootPath().'public/upload/excel');
+            })->everyDay(sysconf('database_day'));
+            Schedule::call('清理上传已删除文件',function () {
+                FileService::instance()->clear();
+            })->everyMinute();
+        }catch (\Exception $exception){
 
-    protected function registerView()
-    {
-
-        Admin::registerRoute();;
-
-        //菜单管理
-        $this->app->route->resource('menu', Menu::class);
-        //日志调试
-        $this->app->route->post('log/logData', Log::class . '@logData');
-        $this->app->route->get('log/debug', Log::class . '@debug');
-        $this->app->route->post('log/remove', Log::class . '@remove');
-        //插件
-        $this->app->route->get('plug/add', Plug::class . '@add');
-        $this->app->route->get('plug/grid', Plug::class . '@grid');
-        $this->app->route->post('plug/enable', Plug::class . '@enable');
-        $this->app->route->post('plug/install', Plug::class . '@install');
-        $this->app->route->get('plug', Plug::class . '@index');
-        //消息通知
-        $this->app->route->get('notice/notification', Notice::class . '@notification');
-        $this->app->route->post('notice/system', Notice::class . '@system');
-        $this->app->route->post('notice/reads', Notice::class . '@reads');
-        $this->app->route->delete('notice/clear', Notice::class . '@clear');
-        //数据库备份
-        $this->app->route->get('backup/config', Backup::class . '@config');
-        $this->app->route->post('backup/add', Backup::class . '@add');
-        $this->app->route->post('backup/reduction', Backup::class . '@reduction');
-        $this->app->route->get('backup', Backup::class . '@index');
-        //文件管理系统
-        $this->app->route->get('filesystem', FileSystem::class . '@index');
-        $this->app->route->post('filesystem/mkdir', FileSystem::class . '@mkdir');
-        $this->app->route->post('filesystem/rename', FileSystem::class . '@rename');
-        $this->app->route->delete('filesystem/del', FileSystem::class . '@del');
-        //系统队列
-        $this->app->route->get('queue/progress',function (){
-            $queue = new QueueService($this->app->request->get('id'));
-            return json(['code'=>200,'data'=>$queue->progress()]);
-        });
-        $this->app->route->get('queue', Queue::class . '@index');
-        $this->app->route->post('queue/retry', Queue::class . '@retry');
+        }
     }
-
     public function boot()
     {
         $this->commands([
@@ -112,6 +149,11 @@ class ServiceProvider extends Service
             'Eadmin\command\ReplaceData',
             'Eadmin\command\ClearDatabase',
             'Eadmin\command\Queue',
+            'Eadmin\command\Crontab',
         ]);
+        //定时任务
+        $this->crontab();
+        //检测静态文件版本发布
+        $this->publishVersion();
     }
 }

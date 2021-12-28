@@ -17,6 +17,7 @@ class Arrays implements GridInterface
 {
 
     protected $data = [];
+    protected $total = 0;
 
     public function __construct($data)
     {
@@ -28,7 +29,7 @@ class Arrays implements GridInterface
 
     public function getData(bool $hidePage, int $page, int $size)
     {
-        if ($hidePage) {
+        if ($hidePage || $this->total > 0) {
             return $this->data;
         } else {
             $page = ($page - 1) * $size;
@@ -37,9 +38,19 @@ class Arrays implements GridInterface
         }
     }
 
+    public function setTotal($total)
+    {
+        $this->total = $total;
+    }
+
     public function getTotal(): int
     {
-        return $this->data->count();
+        if ($this->total > 0) {
+            return $this->total;
+        } else {
+            return $this->data->count();
+        }
+
     }
 
     /**
@@ -89,6 +100,7 @@ class Arrays implements GridInterface
     {
 
     }
+
     public function realiton($relation)
     {
         // TODO: Implement realiton() method.

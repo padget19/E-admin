@@ -12,6 +12,7 @@ use think\helper\Str;
  * Class Checktag
  * @package Eadmin\component\form\field
  * @method $this multiple(bool $id = true) 是否多选
+ * @method $this color(string $value) 背景色
  */
 class Checktag extends Field
 {

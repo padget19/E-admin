@@ -17,6 +17,7 @@ use Eadmin\component\form\field\Email;
 use Eadmin\component\form\field\Icon;
 use Eadmin\component\form\field\Input;
 use Eadmin\component\form\field\Map;
+use Eadmin\component\form\field\MdEditor;
 use Eadmin\component\form\field\Mobile;
 use Eadmin\component\form\field\Money;
 use Eadmin\component\form\field\Number;
@@ -32,6 +33,7 @@ use Eadmin\component\form\field\TimePicker;
 use Eadmin\component\form\field\Transfer;
 use Eadmin\component\form\field\Tree;
 use Eadmin\component\form\field\Upload;
+use Eadmin\component\form\field\UploadImage;
 
 trait ComponentForm
 {
@@ -60,7 +62,7 @@ trait ComponentForm
         'color' => Color::class,
         'rate' => Rate::class,
         'file' => Upload::class,
-        'image' => Upload::class,
+        'image' => UploadImage::class,
         'editor' => Editor::class,
         'tree' => Tree::class,
         'cascader' => Cascader::class,
@@ -73,5 +75,6 @@ trait ComponentForm
         'display' => Display::class,
         'money' => Money::class,
         'checkTag' => Checktag::class,
+        'mdEditor' => MdEditor::class,
     ];
 }

@@ -1,5 +1,5 @@
 <template>
-    <component :is="drawer" v-model="visible" v-bind="$attrs">
+    <component :is="drawer" v-model="visible" v-bind="$attrs" custom-class="eadmin-drawer">
         <template #title>
             <slot name="title"></slot>
         </template>
@@ -94,5 +94,7 @@
 </script>
 
 <style scoped>
-
+.eadmin-drawer .el-button{
+  margin-right: 10px;
+}
 </style>

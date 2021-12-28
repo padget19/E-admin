@@ -199,12 +199,12 @@ class Index extends Controller
 
         //多模块分组
         $echart->group('系统用户', function ($echart) {
-            $echart->table('system_user', 'create_time', 50);
+            $echart->table('system_user', 'create_time');
             $echart->count('系统用户数量', 50);
             $echart->sum('系统用户id总和', 'id', 50);
         });
         $echart->group('日志', function ($echart) {
-            $echart->table('system_user', 'create_time', 50);
+            $echart->table('system_user', 'create_time');
             $echart->count('日志总数量', 50);
             $echart->sum('日志id总和', 'id', 1000);
         });

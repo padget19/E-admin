@@ -9,6 +9,7 @@
 namespace Eadmin\service;
 
 use Eadmin\Admin;
+use Eadmin\model\SystemMenu;
 use think\facade\Db;
 use Eadmin\Service;
 
@@ -19,6 +20,7 @@ use Eadmin\Service;
  */
 class MenuService
 {
+   
     /**
      * 获取所有菜单
      * @return array|mixed
@@ -36,9 +38,32 @@ class MenuService
             ->order('sort asc,id desc')
             ->cache(10)
             ->select()->toArray();
+        
         return $data;
     }
 
+    /**
+     * 添加菜单
+     * @param array $data
+     */
+    public function add(array $data){
+        SystemMenu::create($data);
+    }
+
+    /**
+     * 获取菜单
+     * @param array $menuIds 包含的菜单id
+     * @return array|mixed
+     */
+    public function menus(array $menuIds){
+        $menus = $this->all();
+        foreach ($menus as $key=>$menu){
+            if(!in_array($menu['id'],$menuIds)){
+                unset($menus[$key]);
+            }
+        }
+        return $menus;
+    }
     /**
      * 生成树形菜单
      * @return array
@@ -61,9 +86,9 @@ class MenuService
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
-    public function listOptions($data = [])
+    public function listOptions($data = null)
     {
-        if (count($data) == 0) {
+        if (is_null($data)) {
             $data = Db::name('system_menu')->where('status', 1)->order('sort asc,id asc')->select();
         }
         $menusList = $this->getTreeLevel($data);

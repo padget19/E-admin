@@ -2,10 +2,10 @@
 declare (strict_types = 1);
 
 namespace {%namespace%};
-
-use think\Service;
-
-class {%className%} extends Service
+use Eadmin\component\Component;
+use Eadmin\PlugServiceProvider;
+use Eadmin\form\Form;
+class {%className%} extends PlugServiceProvider
 {
     /**
      * 注册服务
@@ -24,6 +24,24 @@ class {%className%} extends Service
      */
     public function boot()
     {
-        //
+        parent::boot();
+    }
+    /**
+     * 菜单
+     * @return array
+     */
+    public function menus(): array
+    {
+        return [];
+    }
+    /**
+     * 设置
+     * @return Component
+     */
+    public function setting()
+    {
+        $form = new Form(__DIR__.'/config.php');
+        $form->title('配置');
+        return $form;
     }
 }

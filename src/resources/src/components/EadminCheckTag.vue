@@ -22,6 +22,9 @@
         emits: ['update:modelValue'],
         setup(props,ctx){
             const value = ref(props.modelValue)
+            if(props.multiple && !Array.isArray(value.value)){
+                value.value = []
+            }
             watch(() => props.modelValue, val => {
 
                 value.value = val

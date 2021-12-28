@@ -16,6 +16,7 @@ use Eadmin\grid\Filter;
 use Eadmin\traits\CallProvide;
 use think\db\Query;
 use think\facade\Db;
+use think\facade\Event;
 use think\facade\Request;
 use think\helper\Str;
 use think\Model;
@@ -49,7 +50,9 @@ class Echart extends Component
     protected $groupSeries = [];
     protected $radarMaxKey = -1;
     protected $date_type = null;
+    protected $pkField = '';
     protected $groupMode = false;
+
     /**
      * Echart constructor.
      * @param string $title 标题
@@ -83,9 +86,55 @@ class Echart extends Component
     {
         return $this->chart;
     }
-    public function header($content){
-        $this->attr('header',$content);
+
+    /**
+     * 隐藏工具栏
+     */
+    public function hideTools()
+    {
+        $this->attr('hideTools', true);
     }
+
+    /**
+     * 设置工具栏默认筛选
+     * @param string|array $type yesterday-昨天 today-今天 week-本周 month-本月 year-今年 ['2020-02-02','2020-02-02']-范围
+     * @param string $start_date range范围 开始日期
+     * @param string $end_date range范围 开始日期
+     * $this->toolDefault(['2020-02-02','2020-02-02']) 范围
+     */
+    public function toolDefault($type)
+    {
+        if (is_array($type)) {
+            $this->attr('rangeDate', $type);
+            $this->attr('start_date',$type[0]);
+            $this->attr('end_date',$type[1]);
+            $type = 'range';
+        }
+        if (!Request::has('date_type')) {
+            $this->date_type = $type;
+        }
+        $params = $this->attr('params');
+        $this->attr('params', $params + ['date_type' => $type]);
+    }
+
+    /**
+     * 头部内容
+     * @param $content
+     */
+    public function header($content)
+    {
+        $this->attr('header', $content);
+    }
+
+    /**
+     * 底部内容
+     * @param $content
+     */
+    public function footer($content)
+    {
+        $this->attr('footer', $content);
+    }
+
     /**
      * 查询过滤
      * @param mixed $callback
@@ -109,8 +158,9 @@ class Echart extends Component
      * 设置表名数据源
      * @param mixed $table 模型或表名
      * @param string $dateField 日期字段
+     * @param string $pkField 主键字段
      */
-    public function table($table, $dateField = 'create_time')
+    public function table($table, $dateField = 'create_time', $pkField = '')
     {
         $this->template = 'echart';
         if ($table instanceof Model) {
@@ -121,6 +171,7 @@ class Echart extends Component
             $this->db = Db::name($table);
         }
         $this->dateField = $dateField;
+        $this->pkField = $pkField ?: $this->db->getPk();
     }
 
     public function __call($name, $arguments)
@@ -131,19 +182,19 @@ class Echart extends Component
             $after = array_shift($arguments);
             if ($this->chartType == 'line' || $this->chartType == 'bar') {
                 if ($this->groupMode) {
-                    $this->lineAnalyzeGroup($name, $this->db->getPk(), $text, $query, $after);
+                    $this->lineAnalyzeGroup($name, $this->pkField, $text, $query, $after);
                 } else {
-                    $this->lineAnalyze($name, $this->db->getPk(), $text, $query, $after);
+                    $this->lineAnalyze($name, $this->pkField, $text, $query, $after);
                 }
 
             } elseif ($this->chartType == 'pie' || $this->chartType == 'funnel') {
-                $this->pieAnalyze($name, $this->db->getPk(), $text, $query, $after);
+                $this->pieAnalyze($name, $this->pkField, $text, $query, $after);
             } elseif ($this->chartType == 'radar') {
                 $max = array_shift($arguments);
                 if ($max instanceof \Closure) {
                     $max = 100;
                 }
-                $this->radarAnalyze($name, $this->db->getPk(), $text, $max, $query, $after);
+                $this->radarAnalyze($name, $this->pkField, $text, $max, $query, $after);
             }
 
         } else {
@@ -153,9 +204,9 @@ class Echart extends Component
             $after = array_shift($arguments);
             if ($this->chartType == 'line' || $this->chartType == 'bar') {
                 if ($this->groupMode) {
-                    $this->lineAnalyzeGroup($name, $field, $text,$query,$after);
+                    $this->lineAnalyzeGroup($name, $field, $text, $query, $after);
                 } else {
-                    $this->lineAnalyze($name, $field, $text,$query,$after);
+                    $this->lineAnalyze($name, $field, $text, $query, $after);
                 }
             } elseif ($this->chartType == 'pie' || $this->chartType == 'funnel') {
                 $this->pieAnalyze($name, $field, $text, $query, $after);
@@ -303,8 +354,8 @@ class Echart extends Component
                 }
                 break;
             case 'range':
-                $start_date = Request::get('start_date');
-                $end_date = Request::get('end_date');
+                $start_date = Request::get('start_date',$this->attr('start_date'));
+                $end_date = Request::get('end_date',$this->attr('end_date'));
                 $dates = Carbon::parse($start_date)->daysUntil($end_date)->toArray();
                 foreach ($dates as $date) {
                     $xAxis[] = $date->toDateString();
@@ -321,12 +372,13 @@ class Echart extends Component
                 break;
         }
         $total = array_sum($series);
-       // $this->chart->xAxis($xAxis)->series($name . " ($total)", $series);
+        // $this->chart->xAxis($xAxis)->series($name . " ($total)", $series);
         $this->chart->xAxis($xAxis)->series($name, $series);
     }
 
     public function jsonSerialize()
     {
+
         if ($this->chart instanceof RadarChart) {
             $seriesData[] = [
                 'name' => $this->title,
@@ -352,8 +404,9 @@ class Echart extends Component
         if (count($this->seriesData) > 0) {
             $this->chart->series($this->title, $this->seriesData);
         }
+
         if (Request::has('ajax')) {
-            return ['header'=>$this->attr('header'),'content'=>$this->chart];
+            return ['header' => $this->attr('header'), 'footer' => $this->attr('footer'), 'content' => $this->chart];
         }
 
         $this->attr('echart', $this->chart);

@@ -44,7 +44,7 @@ class ActionMode
         $this->component = Dialog::create();
         return $this->component;
     }
-
+    
     /**
      * @return Drawer
      */

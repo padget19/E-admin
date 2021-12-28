@@ -54,6 +54,8 @@ class Dialog extends Field
         $self->destroyOnClose();
         $self->width('35%');
         $self->closeOnPressEscape(false);
+        $self->closeOnClickModal(false);
+        $self->appendToBody();
         if (!is_null($content)) {
             $self->content($content, 'reference');
         }
@@ -68,8 +70,13 @@ class Dialog extends Field
     public function form($form)
     {
         $this->url('/eadmin.rest');
+        $params = Admin::parseUrlQuery($form);
+        $form = Admin::dispatch($form);
+        if($form->bind('eadmin_title')){
+            $this->title($form->bind('eadmin_title'));
+        }
         $callMethod = $form->getCallMethod();
-        $this->params($callMethod);
+        $this->params(array_merge($callMethod,$params));
         //权限
         $this->auth($callMethod['eadmin_class'],$callMethod['eadmin_function']);
         return $this;
@@ -83,6 +90,7 @@ class Dialog extends Field
     {
         return $this->content($content, 'reference');
     }
+
 
     /**
      * 标题

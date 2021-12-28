@@ -11,10 +11,26 @@ app.directive('redirect', {
         }
     }
 })
+
 app.directive('highlight', function (el) {
     let blocks = el.querySelectorAll('pre code');
     blocks.forEach((block) => {
         hljs.highlightBlock(block)
         block.innerHTML = "<ul><li>" + block.innerHTML.replace(/\n/g,"\n</li><li>") +"\n</li></ul>";
     })
+})
+
+app.directive('focus', {
+    mounted(el, binding) {
+        if(binding.value){
+            try {
+                // @ts-ignore
+                binding.instance.$refs[binding.value].focus()
+            }catch (e){
+
+            }
+        }else{
+            el.focus()
+        }
+    }
 })

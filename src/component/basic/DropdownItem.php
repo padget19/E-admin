@@ -21,6 +21,7 @@ class DropdownItem extends Component
     protected $dropdown;
     public function __construct($content)
     {
+        parent::__construct();
         if($content){
             $this->content($content);
         }

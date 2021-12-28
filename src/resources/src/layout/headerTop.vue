@@ -2,12 +2,13 @@
     <div class="header-container">
         <i v-if="sidebar.visible || state.device === 'mobile'" :class="sidebar.opend?'el-icon-s-unfold hamburger':'el-icon-s-fold hamburger'"
            style="font-size: 18px" @click="collapse"/>
-        <el-menu :default-active="activeIndex" @select="selectMenu" class="menu" mode="horizontal" v-if="state.device === 'desktop'">
+        <el-menu :default-active="activeIndex" text-color="hsla(0,0%,100%,.7)" active-text-color="#ffffff" :background-color="variables.theme" @select="selectMenu" class="menu" mode="horizontal" v-show="state.topMenuMode && state.device === 'desktop'">
             <el-menu-item v-for="item in menus" :index="item.id+''">
                 <i :class="item.icon" v-if="item.icon"></i>
-                <span slot="title">{{item.name}}</span>
+                <span>{{item.name}}</span>
             </el-menu-item>
         </el-menu>
+        <breadcrumb v-if="!state.topMenuMode && state.device != 'mobile'" style="margin-right: 5px"></breadcrumb>
         <div class="right-menu">
 
             <el-tooltip effect="dark" content="全屏" placement="bottom">
@@ -19,13 +20,18 @@
                 </div>
             </el-tooltip>
             <notice></notice>
+<!--            <el-tooltip effect="dark" :content="state.theme == 'light'?'亮色':'深色'" placement="bottom">-->
+<!--              <div class="right-menu-item hover-effect" @click="changeTheme">-->
+<!--                <i :class="state.theme == 'light'?'fa fa-sun-o':'fa fa-moon-o'"/>-->
+<!--              </div>-->
+<!--            </el-tooltip>-->
             <a-dropdown trigger="click" class="avatar-container" >
                 <div>
                     <div class="avatar-wrapper">
                         <img :src="state.info.avatar" class="user-avatar">
                         <span class="right-menu-item" style="line-height: 1">
-                        <span style="color: #777777">{{ state.info.nickname }}</span>
-                        <div style="line-height: 18px"><el-badge is-dot type="success" style="top:4px;"/> <span style="color: #999999">{{ state.info.username }}</span></div>
+                        <span style="color: #ffffff">{{ state.info.nickname }}</span>
+                        <div style="line-height: 18px"><el-badge is-dot type="success" style="top:4px;"/> <span style="color: #ffffff">{{ state.info.username }}</span></div>
                         </span>
                         <i class="el-icon-caret-bottom" style="line-height: 30px"/>
                     </div>
@@ -44,7 +50,7 @@
 </template>
 
 <script>
-
+    import variables  from '../styles/theme.scss';
     import {useRoute} from 'vue-router'
     import {link, findParent, findTree,refresh} from '@/utils'
     import {defineComponent, watch, inject, computed} from 'vue'
@@ -52,12 +58,13 @@
     import router from "../router";
     import screenfull from "@/components/screenfull.vue";
     import notice from "@/layout/notice.vue";
-
+    import breadcrumb from '@/components/breadcrumb.vue'
     export default defineComponent({
         name: "headerTop",
         components:{
             screenfull,
-            notice
+            notice,
+            breadcrumb
         },
         setup() {
             const route = useRoute()
@@ -83,10 +90,12 @@
                     }
                     menuLevels.push(menu)
                     if (menu.pid === 0) {
-                        action.sidebarVisible(false)
+                        if(state.topMenuMode) {
+                          action.sidebarVisible(false)
+                        }
                         action.selectMenuModule(menu.id)
                     }
-                    if(menuLevels.length > 1){
+                    if(menuLevels.length > 1 || !state.topMenuMode){
                         action.setBreadcrumb(menuLevels)
                     }else{
                         action.setBreadcrumb([])
@@ -113,7 +122,9 @@
                         }
                         break;
                     } else {
+                      if(state.topMenuMode){
                         action.sidebarVisible(false)
+                      }
                     }
                 }
                 linkMenuBool = false
@@ -130,10 +141,10 @@
                 if(!state.menuModule){
                     selectMenuModule(index)
                 }
+                action.gridActivatedRefresh(false)
                 action.selectMenuModule(index)
                 if (!menu.children) {
                     link(menu.url)
-
                 }
             }
 
@@ -161,6 +172,10 @@
             function refreshs() {
                 refresh()
             }
+            //切换深色主题
+            function changeTheme(){
+              action.changeTheme()
+            }
             return {
                 activeIndex,
                 state,
@@ -169,21 +184,31 @@
                 sidebar,
                 menus,
                 logout,
-                refreshs
+                refreshs,
+                variables,
+                changeTheme
             }
         }
     })
 </script>
 
 <style lang="scss" scoped>
+    @import '@/styles/theme.scss';
     .menu{
         overflow-x: auto;
+        scrollbar-width:none;
         display: flex;
+    }
+    .menu .el-menu-item i{
+       color: hsla(0,0%,100%,.7)!important;
+    }
+    .menu .el-menu-item:hover{
+        background-color: hsla(0,0%,100%,.1)!important;
     }
     .header-container {
         display: flex;
         align-items: center;
-        background: #FFFFFF;
+        background: $theme;
         height: 60px;
         width: 100%;
         /*box-shadow: 0 1px 4px rgba(0, 21, 41, .08);*/
@@ -192,6 +217,7 @@
     .hamburger {
         padding: 0 10px;
         cursor: pointer;
+        color: #ffffff;
     }
 
     .right-menu {
@@ -201,7 +227,7 @@
         display: -webkit-flex;
         align-items: center;
         justify-content: center;
-        color: #333;
+        color: #ffffff;
 
         &:focus {
             outline: none;
@@ -218,7 +244,7 @@
                 transition: background .3s;
 
                 &:hover {
-                    background-color: #f9f9f9;
+                    background-color: hsla(0,0%,100%,.1);
                 }
             }
         }
@@ -236,14 +262,14 @@
                 display: -webkit-flex;
                 align-items: center;
                 justify-content: center;
-                color: #000011;
+                color: #ffffff;
                 position: relative;
                 padding: 0 8px;
 
                 &:hover {
                     cursor: pointer;
                     transition: background .3s;
-                    background-color: #f9f9f9;
+                    background-color: hsla(0,0%,100%,.1);
                 }
                 .el-icon-caret-bottom {
                     cursor: pointer;

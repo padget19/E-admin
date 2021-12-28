@@ -42,6 +42,7 @@ class Detail extends Component
         $this->card = $this->createCard();
         $this->bind('eadmin_description', '详情');
         $this->attr('class','eadmin-detail');
+        parent::__construct();
     }
 
     /**
@@ -142,18 +143,16 @@ class Detail extends Component
      * @param string $label 标签
      * @return Column
      */
-    public function userInfo($avatar = 'headimg', $nickname = 'nickname', $label = '用户信息')
+    public function userInfo($avatar = 'avatar', $nickname = 'nickname', $label = '用户信息')
     {
         $field = $this->field($avatar, $label);
         return $field->display(function ($val, $data) use ($nickname) {
-
             $nicknameValue = $this->getData($nickname);
-            return Card::create(
-                Html::create([
-                    Image::create()->src($val)->fit('cover')->previewSrcList([$val])->attr('style', ['width' => '80px', 'height' => '80px', 'borderRadius' => '50%']),
-                    "<br>{$nicknameValue}"
-                ])->attr('style', ['textAlign' => 'center', 'lineHeight' => '25px', 'display' => 'block'])
-            )->bodyStyle(['padding' => '10px']);
+            return Html::create([
+                Image::create()->fit('cover')->previewSrcList([$val])
+                    ->attr('style', ['width' => '50px', 'height' => '50px', 'borderRadius' => '50%'])->src($val),
+                "<br>{$nicknameValue}"
+            ])->attr('style', ['textAlign' => 'center', 'lineHeight' => '25px', 'display' => 'block','width'=>'50px']);
         });
     }
 

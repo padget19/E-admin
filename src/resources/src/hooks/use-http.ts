@@ -1,4 +1,5 @@
 import request from '@/utils/axios'
+// @ts-ignore
 import {ref} from "vue"
 const useHttp =  function () {
     const loading = ref(false)

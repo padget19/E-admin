@@ -45,12 +45,10 @@ class Model implements FormInterface
         $result = true;
         Db::startTrans();
         try {
-            if (isset($data[$this->pkField])) {
-                $isExists = Db::name($this->model->getTable())->where($this->pkField, $data[$this->pkField])->find();
-                if ($isExists) {
-                    $this->data  = $this->model->where($this->pkField, $data[$this->pkField])->find();
-                    $this->model = $this->model->where($this->pkField, $data[$this->pkField])->find();
-                }
+            if (isset($data[$this->pkField]) && !empty($data[$this->pkField])) {
+                $this->model  = $this->model->where($this->pkField, $data[$this->pkField])->find();
+
+                $this->data = clone $this->model;
             }
             $result = $this->model->save($data);
             foreach ($data as $field => $value) {
@@ -90,6 +88,9 @@ class Model implements FormInterface
                         $localKey = $this->model->$field()->getLocalKey();
                         $parent =  $this->model->$field()->getParent();
                         foreach ($value as $key => &$val) {
+                            if(empty($val[$localKey]) && isset($val[$localKey])){
+                                unset($val[$localKey]);
+                            }
                             $val['sort'] = $key;
                             $val[$foreignKey] = $parent->$localKey;
                         }
@@ -129,9 +130,6 @@ class Model implements FormInterface
             $result = false;
         }
         return $result;
-    }
-    public function getDataAll(){
-        return $this->model->select();
     }
     /**
      * 获取字段数据

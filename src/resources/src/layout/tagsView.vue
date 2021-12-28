@@ -7,12 +7,13 @@
                     <span>{{item.title}}</span>
                     <i class="el-icon-close close" v-show="route.fullPath === item.url || select === item.url" @click.stop="close(item.url)"></i>
                 </li>
-
             </ul>
             <i class="el-icon-arrow-right tabMove" v-if="isScroll" @click="rightMove"></i>
         </div>
         <div class="breadcrumb">
-            <i class="el-icon-back back" @click="back"></i>
+            <el-tooltip placement="bottom" content="返回上一页">
+                <i class="el-icon-back back" @click="back"></i>
+            </el-tooltip>
             <el-dropdown @command="handleCommand">
                 <i class="el-icon-close back"></i>
                 <template #dropdown>
@@ -45,6 +46,7 @@
             const isScroll = ref(false)
             const tabsTag = ref('')
             function clickHandel(url) {
+                action.gridActivatedRefresh(false)
                 router.push(url)
             }
             function selectTag(url) {
@@ -123,7 +125,7 @@
     })
 </script>
 <style lang="scss" scoped>
-    @import '../styles/element-variables.scss';
+    @import '../styles/light';
     .tagsView {
         z-index: 1;
         display: flex;
@@ -138,6 +140,7 @@
         align-items:center;
         flex: 1;
         overflow: auto;
+        scrollbar-width:none;
     }
     .tagsView .tabs .tabMove{
         cursor: pointer;
@@ -157,6 +160,7 @@
         height: 40px;
         flex: 1;
         overflow-x: auto;
+        scrollbar-width:none;
     }
     .tagsView ul::-webkit-scrollbar {
         display:none
@@ -200,7 +204,7 @@
     }
     .activte{
         color: $--color-primary !important;
-        background: #e8f4ff !important;
+        background: rgba($--color-primary,.1) !important;
     }
     .breadcrumb{
         display: flex;

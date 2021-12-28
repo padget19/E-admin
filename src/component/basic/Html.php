@@ -19,6 +19,7 @@ class Html extends Component
 
     public function __construct($content = '')
     {
+        parent::__construct();
         $this->tag('span');
         if (!empty($content) || is_numeric($content)) {
             $this->content($content);

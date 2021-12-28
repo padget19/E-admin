@@ -4,8 +4,11 @@
 namespace Eadmin\component\grid;
 
 
+use Eadmin\component\basic\Button;
 use Eadmin\component\basic\DownloadFile;
 use Eadmin\component\basic\Html;
+use Eadmin\component\basic\Image;
+use Eadmin\component\basic\Link;
 use Eadmin\component\basic\Popover;
 use Eadmin\component\basic\Space;
 use Eadmin\component\basic\Tag;
@@ -16,7 +19,10 @@ use Eadmin\component\Component;
 use Eadmin\component\form\field\Rate;
 use Eadmin\component\form\field\Switchs;
 use Eadmin\component\layout\Content;
+use Eadmin\detail\Field;
 use Eadmin\grid\Grid;
+use Eadmin\traits\ColumnEditable;
+use Eadmin\traits\ColumnFilter;
 
 /**
  * Class Column
@@ -31,6 +37,7 @@ use Eadmin\grid\Grid;
  */
 class Column extends Component
 {
+    use ColumnFilter, ColumnEditable;
     protected $name = 'ElTableColumn';
     protected $prop;
     protected $closure = null;
@@ -51,6 +58,7 @@ class Column extends Component
 
     public function __construct($prop, $label, $grid)
     {
+        parent::__construct();
         $this->attr('slots', ['title' => 'eadmin_' . $prop, 'customRender' => 'default']);
         if (!empty($prop)) {
             $this->prop = $prop;
@@ -161,7 +169,7 @@ class Column extends Component
     /**
      * 解析每行数据
      * @param array $data 数据
-     * @return Html
+     * @return mixed
      */
     public function row($data)
     {
@@ -206,25 +214,32 @@ class Column extends Component
         }
         //自定义导出
         if (!is_null($this->exportClosure)) {
-            $value = call_user_func_array($this->exportClosure, [$originValue, $data]);
-            $this->exportData = $value;
+            $this->exportData = call_user_func_array($this->exportClosure, [$originValue, $data]);
         }
         //内容过长超出tip显示
         if ($this->tip) {
             if (!$this->attr('width')) {
                 $this->width(120);
             }
-            return Tip::create(Html::create($value)
+            $width = $this->attr('width') - 20;
+            $value = Tip::create(Html::div()->content($value)
                 ->style([
-                    'width' => $this->attr('width') . 'px',
+                    'width' => $width . 'px',
                     'textOverflow' => 'ellipsis',
                     'overflow' => 'hidden',
                     'whiteSpace' => 'nowrap',
                 ])
-                ->tag('div'))->content($value)->placement('top');
-        } else {
-            return Html::create()->content($value);
+            )->content($value)->placement('top');
         }
+        $fontSize = $this->grid->attr('fontSize');
+        if(!is_null($this->editable)){
+            $value = $this->editableCall($value,$data);
+        }
+        $html = Html::create($value)->attr('class', 'eadmin_table_td_' . $this->attr('prop'));
+        if ($fontSize) {
+            $html->style(['fontSize' => $fontSize . 'px']);
+        }
+        return $html;
     }
 
     public function getExportData()
@@ -240,10 +255,12 @@ class Column extends Component
     public function label(string $label)
     {
         $this->attr('label', $label);
-        $this->header(Html::create()->content($label));
+        $this->header(
+            Html::create($label)->attr('class', 'eadmin_table_th_' . $this->attr('prop'))
+        );
         return $this;
     }
-   
+
     /**
      * 隐藏
      * @return \Eadmin\grid\Column|$this
@@ -278,12 +295,106 @@ class Column extends Component
      * 音频显示
      * @return $this
      */
-    public function audio(){
-        $this->display(function ($val){
+    public function audio()
+    {
+        $this->display(function ($val) {
             return "<audio controls src='{$val}'>您的浏览器不支持 audio 标签。</audio>";
+        })
+            ->closeExport();
+        return $this;
+    }
+
+    /**
+     * 文字链接
+     * @link https://element-plus.gitee.io/#/zh-CN/component/link 文字链接
+     * @link https://element-plus.gitee.io/#/zh-CN/component/icon 图标
+     * @param string $field 字段，不指定则显示当前value
+     * @param string $target 打开方式 _blank(在新窗口中打开) / _self(在相同的窗口打开) / _parent(在父窗口打开) / _top(在整个窗口中)
+     * @param string $icon 图标
+     * @param string $type 类型
+     * @param bool $underline 是否下划线
+     * @return $this
+     */
+    public function link($field = '', $target = '_blank', $icon = '', $type = 'primary', $underline = false)
+    {
+        $this->display(function ($val, $data) use ($field, $target, $icon, $type, $underline) {
+            $label = $field ? $data[$field] : $val;
+            return Link::create($label)
+                ->href($val)
+                ->type($type)
+                ->underline($underline)
+                ->target($target)
+                ->icon($icon);
         });
         return $this;
     }
+
+    /**
+     * 弹出框
+     * @param string $field 指定字段
+     * @param string $label 按钮名称
+     * @param string $width 宽度
+     * @param string $tigger 触发方式  click/focus/hover/manual
+     * @param string $placement 出现位置 top/top-start/top-end/bottom/bottom-start/bottom-end/left/left-start/left-end/right/right-start/right-end
+     * @return $this
+     */
+    public function popover($field = '', $label = '查看', $width = '500px', $tigger = 'hover', $placement = 'top')
+    {
+        $this->display(function ($val, $data) use ($field, $label, $width, $tigger, $placement) {
+            $valueData = $field ? $data[$field] : $val;
+            if (empty($valueData)) return '';
+            return Popover::create(Button::create($label))
+                ->content($this->getTags($valueData))
+                ->width($width)
+                ->trigger($tigger)
+                ->placement($placement);
+        });
+        return $this;
+    }
+
+    /**
+     * 多个标签
+     * @param string $field 指定字段
+     * @param string $type 类型 success / info / warning / danger
+     * @param string $size 尺寸   medium / small / mini
+     * @return $this
+     */
+    public function tags($field = '', $type = 'primary', $size = 'small')
+    {
+        $this->display(function ($val, $data) use ($field, $type, $size) {
+            $valueData = $field ? $data[$field] : $val;
+            if (empty($valueData) || !is_array($valueData)) return '';
+            return $this->getTags($valueData, $type, $size);
+        });
+        return $this;
+    }
+
+    /**
+     * 标签组组装
+     * @param array $value 数据
+     * @param string $type 类型 success / info / warning / danger
+     * @param string $size 尺寸    medium / small / mini
+     * @return Html
+     */
+    public function getTags(array $value = [], $type = 'primary', $size = 'small')
+    {
+        $html = Html::create()
+            ->tag('div')
+            ->style(['display' => 'flex', 'flexWrap' => 'wrap']);
+        foreach ($value as $apartment) {
+            $html->content(
+                Html::create(
+                    Tag::create($apartment)
+                        ->type($type)
+                        ->size($size)
+                )
+                    ->tag('div')
+                    ->style(['marginRight' => '5px', 'marginBottom' => '5px'])
+            );
+        }
+        return $html;
+    }
+
     /**
      * 视频显示
      * @param int|string $width 宽度
@@ -296,7 +407,8 @@ class Column extends Component
             $video = new Video;
             $video->url($val)->size($width, $height);
             return $video;
-        });
+        })
+            ->closeExport();
         return $this;
     }
 
@@ -310,36 +422,47 @@ class Column extends Component
      */
     public function image($width = 80, $height = 80, $radius = 5, $multi = false)
     {
-        $this->display(function ($val, $data) use ($width, $height, $radius, $multi) {
+        $this->display(function ($val) use ($width, $height, $radius, $multi) {
             if (empty($val)) {
                 return '--';
             }
+            $images = $val;
             if (is_string($val)) {
                 $images = explode(',', $val);
-            } elseif (is_array($val)) {
-                $images = $val;
             }
-            $html = '';
-            $jsonImage = json_encode($images);
+            $html = Html::create();
             if ($multi) {
                 foreach ($images as $image) {
-                    $html .= "<el-image 
-									style='width: {$width}px; height: {$height}px; border-radius: {$radius}%' 
-									src='{$image}' 
-									fit='cover' 
-									:preview-src-list='{$jsonImage}'
-							  ></el-image>&nbsp;";
+                    $html->content(
+                        Image::create()
+                            ->fit('cover')
+                            ->src($image)
+                            ->previewSrcList($images)
+                            ->style([
+                                'width' => "{$width}px",
+                                'height' => "{$height}px",
+                                'borderRadius' => "{$radius}%",
+                                'marginRight' => '5px',
+                            ])
+                    );
                 }
             } else {
-                $html = "<el-image 
-							style='width: {$width}px; height: {$height}px;border-radius: {$radius}%' 
-							src='{$images[0]}' 
-							fit='cover' 
-							:preview-src-list='{$jsonImage}'
-						 ></el-image>&nbsp;";
+                $html->content(
+                    Image::create()
+                        ->fit('cover')
+                        ->src($images[0])
+                        ->previewSrcList($images)
+                        ->style([
+                            'width' => "{$width}px",
+                            'height' => "{$height}px",
+                            'borderRadius' => "{$radius}%",
+                            'marginRight' => '5px',
+                        ])
+                );
             }
             return $html;
-        });
+        })
+            ->closeExport();
         return $this;
     }
 
@@ -352,7 +475,7 @@ class Column extends Component
      */
     public function images($width = 80, $height = 80, $radius = 5)
     {
-        $this->image($width, $height, $radius, true);
+        return $this->image($width, $height, $radius, true);
     }
 
     /**
@@ -366,28 +489,29 @@ class Column extends Component
             $params = $this->grid->getCallMethod();
             $params['eadmin_ids'] = [$data[$this->grid->drive()->getPk()]];
             $content = [];
-            foreach ($fields as $field=>$label){
+            foreach ($fields as $field => $label) {
                 $switch = Switchs::create(null, $data[$field])
                     ->state([[1 => ''], [0 => '']])
                     ->url('/eadmin/batch.rest')
                     ->field($field)
                     ->params($params);
-                $content[] =  Html::create([
+                $content[] = Html::create([
                     Html::create($label . ': '),
-                    $switch
-                ])->style(['display'=>'flex','justifyContent'=>'space-between'])->tag('p');
+                    $switch,
+                ])->style(['display' => 'flex', 'justifyContent' => 'space-between'])->tag('p');
             }
             return $content;
-        });
+        })
+            ->closeExport();
     }
 
     /**
      * switch开关
      * @param array $switchArr 二维数组 开启的在下标0 关闭的在下标1
-     *                         $arr = [
+     *                            $arr = [
      *                            [1 => '开启'],
      *                            [0 => '关闭'],
-     *                         ];
+     *                            ];
      */
     public function switch($switchArr = [[1 => '开启'], [0 => '关闭']])
     {
@@ -400,7 +524,8 @@ class Column extends Component
                 ->url('/eadmin/batch.rest')
                 ->field($this->prop)
                 ->params($params);
-        });
+        })
+            ->closeExport();
     }
 
     /**
@@ -409,10 +534,10 @@ class Column extends Component
      * @param string $field 开关的字段
      * @param array $data 当前行的数据
      * @param array $switchArr 二维数组 开启的在下标0 关闭的在下标1
-     *                          $arr = [
+     *                              $arr = [
      *                              [1 => '开启'],
      *                              [0 => '关闭'],
-     *                          ];
+     *                              ];
      * @return Html
      */
     public function switchHtml($text, $field, $data, $switchArr = [[1 => '开启'], [0 => '关闭']])
@@ -421,7 +546,7 @@ class Column extends Component
         $params['eadmin_ids'] = [$data[$this->grid->drive()->getPk()]];
         if (!empty($text)) $text .= "：";
         return Html::create([
-        	$text,
+            $text,
             Switchs::create(null, $data[$field])
                 ->state($switchArr)
                 ->url('/eadmin/batch.rest')
@@ -505,4 +630,13 @@ class Column extends Component
         return $this->closure;
     }
 
+    public function __call($name, $arguments)
+    {
+        if ($index = strrpos($name, 'filter') === 0) {
+            $method = substr($name, 6);
+
+            return $this->filterMethod($method, $arguments);
+        }
+        return parent::__call($name, $arguments); // TODO: Change the autogenerated stub
+    }
 }

@@ -22,41 +22,31 @@ use think\facade\Event;
  */
 class Crontab extends Command
 {
-    protected $exec_time = null;
     protected function configure()
     {
         // 指令配置
         $this->setName('crontab')->setDescription('Used for scheduling timed tasks');
-        $this->addOption('key', 'k', Option::VALUE_OPTIONAL, 'key');
         $this->addOption('daemon', 'd', Option::VALUE_NONE, 'run');
     }
     protected function execute(Input $input, Output $output)
     {
         if($input->hasOption('daemon')){
             $phpLibry = (new PhpExecutableFinder)->find(false);
-            while (true) {
-                foreach (\Eadmin\Schedule::$crontab as $crontab){
-                    $cmd = [
-                        $phpLibry,
-                        'think',
-                        'crontab',
-                        '--key='.$crontab['key']
-                    ];
-                    if($crontab['schedule']->isMinuteTask()){
-                        if($this->exec_time == date('i')){
-                           
-                           continue;
-                        }
-                        $this->exec_time = date('i');
-                    }
-                    $process = new Process($cmd,app()->getRootPath());
-                    $process->start();
-                }
-                sleep(1);
+            $cmd = [
+                $phpLibry,
+                'think',
+                'crontab',
+            ];
+
+            $process = new Process($cmd,app()->getRootPath());
+            $process->run();
+            while (true){
+                $process->run(function ($type, $line) use($output) {
+                    $output->write($line);
+                });
             }
         }else{
-            $key = $input->getOption('key');
-            Event::trigger(\Eadmin\Schedule::class, $key);
+            Event::trigger(\Eadmin\Schedule::class);
         }
     }
 }

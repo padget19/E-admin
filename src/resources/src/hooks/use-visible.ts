@@ -1,3 +1,4 @@
+// @ts-ignore
 import {ref,watch} from "vue";
 import request from '@/utils/axios'
 const useVisible = function(props:object,ctx:any){

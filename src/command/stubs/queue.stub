@@ -12,7 +12,7 @@ class $className extends Queue
      * @param $data
      * @return bool
      */
-    public function handel($data): bool
+    public function handle($data): bool
     {
         /**  do some
             $this->progress('任务进行中',10);

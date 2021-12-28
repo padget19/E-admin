@@ -58,12 +58,12 @@ class SidebarGrid extends Component
 
     public function form($form, $width = '40%')
     {
-        $this->tools['addButton'] = Button::create(admin_trans('admin.add'))
+        $this->tools['addButton'] = Button::create('添加')
             ->typePrimary()
             ->icon('el-icon-plus')
             ->sizeSmall()
             ->dialog()->width($width)->form($form);
-        $button = Button::create(admin_trans('admin.edit'))
+        $button = Button::create('编辑')
             ->typeWarning()
             ->icon('el-icon-edit')
             ->sizeSmall();
@@ -211,7 +211,7 @@ class SidebarGrid extends Component
         //删除
         if(request()->has('eadmin_sidebar_delete')){
             $this->model->where($this->model->getPk(),request()->param('id'))->delete();
-            admin_success_message(admin_trans('admin.delete_complete'));
+            admin_success_message('删除成功');
         }
         //加载数据
         if(request()->has('eadmin_sidebar_data')){

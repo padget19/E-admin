@@ -28,7 +28,7 @@
             function opend() {
                 ElMessageBox.confirm(props.message, props.title, ctx.attrs)
                     .then(({value}) => {
-                        if (props.url) {
+                        if (props.url && !loading.value) {
                             let params = props.params
                             if (value) {
                                 params = Object.assign(params, {inputValue: value})

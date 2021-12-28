@@ -222,7 +222,7 @@ class Model implements GridInterface
                     $filter->parseFilter(null, $relationFilter . '.');
                     $wheres = $filter->db()->getOptions('where');
                     foreach ($wheres['AND'] as $where) {
-                        if ($where[1] == 'EXISTS') {
+                        if ($where[1] == 'EXISTS' && !empty($fields)) {
                             $relationWhereSqls[] = $where[2];
                             break;
                         }
@@ -265,10 +265,10 @@ class Model implements GridInterface
             admin_success('操作完成', '排序成功');
         } else {
             $res = $this->model->removeWhereField($this->softDeleteField)->strict(false)->whereIn($pk, $ids)->update($data);
-            if ($res) {
-                return true;
+            if ($res !== false) {
+                admin_success('操作完成', '数据保存成功')->redirect($url);
             } else {
-                return false;
+                admin_error_message('数据保存失败');
             }
         }
     }

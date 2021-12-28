@@ -13,7 +13,7 @@ use think\helper\Str;
 /**
  * 选择器
  * Class Select
- * @link https://element-plus.gitee.io/#/zh-CN/component/input-number
+ * @link    https://element-plus.gitee.io/#/zh-CN/component/input-number
  * @method $this multiple(bool $id = true) 是否多选
  * @method $this size(string $size) 输入框尺寸    medium / small / mini
  * @method $this clearable(bool $id = true) 是否可以清空选项
@@ -57,6 +57,12 @@ class Select extends Field
         $this->optionBindField = Str::random(30, 3);
     }
 
+    public function setOptionField($field)
+    {
+        $this->optionBindField = $field;
+        return $this;
+    }
+
     /**
      * 禁用选项数据
      * @param array $data 禁用数据
@@ -69,11 +75,11 @@ class Select extends Field
 
     /**
      * 设置分组选项数据
-     * @param array  $data
+     * @param array $data
      * @param string $name 分组字段名
-	 * @param string $label label字段
-	 * @param string $id id字段
-	 * @return $this
+     * @param string $label label字段
+     * @param string $id id字段
+     * @return $this
      */
     public function groupOptions(array $data, $name = 'options', $label = 'label', $id = 'id')
     {
@@ -103,69 +109,63 @@ class Select extends Field
         */
         $bindOptions = [];
         foreach ($data as $key => $option) {
+            $disabled = false;
             $options = [];
             if (in_array($option[$id], $this->disabledData)) {
                 $disabled = true;
-            } else {
-                $disabled = false;
             }
+            $selectGroup = OptionGroup::create()
+                ->attr('label', $option[$label])
+                ->attr('disabled', $disabled);
             foreach ($option[$name] as $item) {
+                $disabled = false;
                 if (in_array($item[$id], $this->disabledData)) {
                     $disabled = true;
-                } else {
-                    $disabled = false;
                 }
+                $selectGroup->content(
+                    SelectOption::create()
+                        ->attr('label', $item[$label])
+                        ->attr('disabled', $disabled)
+                        ->attr('value', $item[$id])
+                );
                 $options[] = [
                     'id' => $item[$id],
                     'label' => $item[$label],
                     'disabled' => $disabled,
                 ];
             }
-            $bindOptions = array_merge($bindOptions,$options);
-            $selectOption = SelectOption::create();
-            $selectOption->map($options)
-                ->mapAttr('label', 'label')
-                ->mapAttr('key', 'id')
-                ->mapAttr('value', 'id')
-                ->mapAttr('disabled', 'disabled');
-            $selectGroup = OptionGroup::create()
-                ->attr('label', $option[$label])
-                ->attr('disabled', $disabled)
-                ->content($selectOption);
+            $bindOptions = array_merge($bindOptions, $options);
             $this->content($selectGroup);
         }
         $this->bindValue($bindOptions, 'options', $this->optionBindField);
-        if ($this->formItem) {
-			$this->formItem->form()->except([$this->optionBindField]);
-		}
         return $this;
     }
 
     /**
      * 联动select
      * @param \Closure $select
-     * @param $closure
+     * @param          $closure
      * @return Select
      */
-    public function load(\Closure $select,$closure)
+    public function load(\Closure $select, $closure)
     {
 
         $formItems = $this->formItem->form()->collectFields($select);
         foreach ($formItems as $formItem) {
             $select = $formItem->content['default'][0];
-            if(is_null($this->bindAttr('loadOptionField'))){
+            if (is_null($this->bindAttr('loadOptionField'))) {
                 $this->bindAttr('loadOptionField', $select->optionBindField, true);
                 $this->bindAttr('loadField', $select->bindAttr('modelValue'), true);
             }
             $this->formItem->form()->push($formItem);
         }
         if (Request::has('eadminSelectLoad') && Request::get('eadmin_field') == $select->bindAttr('modelValue')) {
-            $datas = call_user_func($closure, Request::get('eadmin_id'));
+            $data = call_user_func($closure, Request::get('eadmin_id'));
             $options = [];
-            foreach ($datas as $key => $value) {
+            foreach ($data as $key => $value) {
                 $options[] = [
                     'id' => $key,
-                    'label' => $value
+                    'label' => $value,
                 ];
             }
             $this->successCode($options);
@@ -173,13 +173,14 @@ class Select extends Field
         $this->params(['eadmin_field' => $select->bindAttr('modelValue')] + $this->formItem->form()->getCallMethod());
         return $this;
     }
+
     /**
      * 设置选项数据
      * @param array $data 选项数据
      * @param array $disable 禁用选项数据
      * @return Select
      */
-    public function options(array $data,array $disable = [])
+    public function options(array $data, array $disable = [])
     {
         $this->disabledData = $disable;
         $options = [];
@@ -198,7 +199,7 @@ class Select extends Field
 
         $this->bindValue($options, 'options', $this->optionBindField);
         $mapField = $this->optionBindField;
-        if($this->formItem){
+        if ($this->formItem) {
             $this->formItem->form()->except([$this->optionBindField]);
             if (empty($this->formItem->form()->manyRelation())) {
                 $mapField = $this->formItem->form()->bindAttr('model') . '.' . $this->optionBindField;
@@ -212,4 +213,12 @@ class Select extends Field
         return $this->content($this->selectOption);
     }
 
+    /**
+     * 设置宽度
+     * @param string $width 宽度大小
+     */
+    public function width($width = '100%')
+    {
+        return $this->style(['width' => $width]);
+    }
 }

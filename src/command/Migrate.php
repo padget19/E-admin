@@ -40,6 +40,7 @@ class Migrate extends Run
         $version = $input->getOption('target');
         $date    = $input->getOption('date');
         $force   = !!$input->getOption('force');
+        $this->migrations = null;
         if($cmd == 'run'){
             // run the migrations
             $start = microtime(true);

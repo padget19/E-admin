@@ -26,9 +26,7 @@ const switchs = defineAsyncComponent(() =>
 const tree = defineAsyncComponent(() =>
     import('./components/tree.vue')
 )
-const button = defineAsyncComponent(() =>
-    import('./components/button.vue')
-)
+
 const grid = defineAsyncComponent(() =>
     import('./components/grid/grid.vue')
 )
@@ -38,10 +36,11 @@ const icon = defineAsyncComponent(() =>
 const batchAction = defineAsyncComponent(() =>
     import('./components/grid/batchAction.vue')
 )
-const confirm = defineAsyncComponent(() =>
-    import('./components/confirm.vue')
-)
+import confirm from './components/confirm.vue'
 
+const button = defineAsyncComponent(() =>
+    import('./components/button.vue')
+)
 const DropdownItem = defineAsyncComponent(() =>
     import('./components/dropdown/DropdownItem.vue')
 )
@@ -104,6 +103,10 @@ const EadminStep = defineAsyncComponent(() =>
 const EadminCheckTag = defineAsyncComponent(() =>
     import('./components/EadminCheckTag.vue')
 )
+const EadminSidebarGrid = defineAsyncComponent(() =>
+    import('./components/grid/sidebarGrid.vue')
+)
+app.component('EadminSidebarGrid',EadminSidebarGrid)
 app.component('EadminCheckTag',EadminCheckTag)
 app.component('EadminStep',EadminStep)
 app.component('EadminCheckboxGroup',EadminCheckboxGroup)

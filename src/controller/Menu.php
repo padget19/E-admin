@@ -89,6 +89,7 @@ class Menu extends Controller
             $form->text('name', '菜单名称')->required();
             $form->text('url', '菜单链接');
             $form->icon('icon', '菜单图标');
+            $form->number('sort', '排序')->default(SystemMenu::where('pid',$pid)->max('sort')+1);
         });
     }
 }

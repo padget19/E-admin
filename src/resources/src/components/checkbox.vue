@@ -1,6 +1,7 @@
 <template>
     <el-checkbox v-if="onCheckAll" :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
-    <el-checkbox-group v-model="value" @change="handleCheckedCitiesChange">
+    <el-divider v-if="onCheckAll"></el-divider>
+    <el-checkbox-group v-bind="$attrs" v-model="value" @change="handleCheckedCitiesChange" :class="horizontal?'horizontal':''">
         <slot></slot>
     </el-checkbox-group>
 </template>
@@ -15,8 +16,9 @@
             checkAll:Boolean,
             onCheckAll:Boolean,
             checkTag:Boolean,
+            horizontal:Boolean,
         },
-        emits: ['update:modelValue'],
+        emits: ['update:modelValue','change'],
         setup(props, ctx) {
             const value = ref(props.modelValue)
             const checkAll = ref(props.modelValue.length == props.options.length)
@@ -34,11 +36,13 @@
             function handleCheckAllChange(val) {
                 value.value = val ? props.options.map(item=>item.value) : []
                 isIndeterminate.value = false;
+                ctx.emit('change',value.value)
             }
             function handleCheckedCitiesChange(value) {
                 let checkedCount = value.length;
                 checkAll.value = checkedCount === props.options.length;
                 isIndeterminate.value = checkedCount > 0 && checkedCount < props.options.length;
+                ctx.emit('change',value)
             }
 
             return {
@@ -53,5 +57,11 @@
 </script>
 
 <style scoped>
-
+    .el-divider--horizontal {
+        margin: 10px 0;
+    }
+    .horizontal{
+        display: flex;
+        flex-direction: column;
+    }
 </style>

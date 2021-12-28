@@ -11,10 +11,8 @@
         </el-select>
         <el-button icon="el-icon-plus" type="primary" plain style="margin-left: 5px;height: 36px" @click="open" :disabled="$attrs.disabled"></el-button>
         <el-dialog top="50px" v-model="visible" :append-to-body="true" width="80%" destroy-on-close>
-            <div v-loading="loading">
-                <render :data="content" v-model:selection="selection" :scroll="height" :add-params="params"
-                        :selection-type="multiple ? 'checkbox':'radio'" style="overflow-x:auto"></render>
-            </div>
+            <render :data="content"  v-model:selection="selection" :scroll="height"  :add-params="params"
+                    :selection-type="multiple ? 'checkbox':'radio'"></render>
             <template #footer>
                 <div :class="multiple && selection.length > 0 ? 'footer':''">
                     <div v-if="multiple && selection.length > 0">已选中: {{selection.length}}</div>
@@ -58,6 +56,7 @@
             }
             const {loading, http} = useHttp()
             const height = {
+                x:'max-content',
                 y: window.innerHeight / 2
             }
             submit()

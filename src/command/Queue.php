@@ -73,7 +73,7 @@ class Queue extends Command
         if ($res === false) {
             $output->writeln("<error>File write failed</error>");
         } else {
-            $output->writeln("<info>Create Seed Success</info>");
+            $output->writeln("<info>Create Queue Success</info>");
         }
     }
 
@@ -89,5 +89,5 @@ class Queue extends Command
         return $stubPath . $name . '.stub';
     }
 
-    
+
 }

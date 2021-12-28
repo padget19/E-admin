@@ -22,6 +22,7 @@ class Content extends Component
 
     public function __construct()
     {
+        parent::__construct();
         $this->direction('vertical');
     }
 
@@ -42,7 +43,7 @@ class Content extends Component
     }
     /**
      * 添加一行
-     * @param \Closure|String $content 内容
+     * @param mixed $content 内容
      * @param int $span 栅格占据的列数,默认24
      * @return Row
      */

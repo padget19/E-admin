@@ -27,24 +27,21 @@ class Publish extends Command
     protected function execute(Input $input, Output $output)
     {
         $force = $input->getOption('force');
-        $public = $input->getOption('public');
-        if($public){
-            $assetsDir = __DIR__ . '/../assets/public';
-            $this->copyDir($assetsDir, app()->getRootPath() . 'public/eadmin',$force);
-            $assetsDir = __DIR__ . '/../assets/admin/view/index.vue';
-            copy($assetsDir,app()->getAppPath() . 'admin/view/index.vue');
-            return true;
+        $public = $input->hasOption('public');
+        if(!$public){
+            $assetsDir = __DIR__ . '/../assets/admin';
+            $this->copyDir($assetsDir, app()->getAppPath() . 'admin',$force);
+            $assetsDir = __DIR__ . '/../database';
+            $this->copyDir($assetsDir, app()->getRootPath() . 'database',$force);
         }
-        $assetsDir = __DIR__ . '/../assets/admin';
-        $this->copyDir($assetsDir, app()->getAppPath() . 'admin',$force);
         $assetsDir = __DIR__ . '/../assets/public';
-        $this->copyDir($assetsDir, app()->getRootPath() . 'public/eadmin',$force);
+        $this->copyDir($assetsDir, app()->getRootPath() . 'public/eadmin', $force);
         $assetsDir = __DIR__ . '/../assets/admin/view/index.vue';
-        copy($assetsDir,app()->getAppPath() . 'admin/view/index.vue');
-        $assetsDir = __DIR__ . '/../database';
-        $this->copyDir($assetsDir, app()->getRootPath() . 'database',$force);
+        $file = __DIR__.'/../../.env';
+        copy($file,app()->getRootPath().'public/eadmin/.env');
+        copy($assetsDir, app()->getAppPath() . 'admin/view/index.vue');
     }
-
+    
     /**
      * 递归复制目录文件
      * @param string $dir 源目录
@@ -81,4 +78,5 @@ class Publish extends Command
             $this->output->writeln("<info>[{$dir}] to [{$src}] 资源文件写入成功 successfully!</info>");
         }
     }
+
 }

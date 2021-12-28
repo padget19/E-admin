@@ -1,10 +1,15 @@
+// @ts-ignore
 import {reactive} from "vue";
 import request from '@/utils/axios'
-import {findTree, appendCss, setObjectValue} from '@/utils'
+import {findTree, appendCss} from '@/utils'
 export const store = Symbol()
 // 使用 reactive 函数完成响应式转换
 const states = reactive({
     device:'desktop',
+    //顶部菜单
+    topMenuMode:false,
+    //标签菜单
+    tagMenuMode:true,
     routerStatus: true,
     //侧边栏
     sidebar: {
@@ -39,10 +44,35 @@ const states = reactive({
     menus: [],
     menuModule: '',
     breadcrumb: [],
+    theme:'',
+    //表格grid激活刷新
+    gridActivatedRefresh:true,
+    gridFirst:true,
 });
 export const state = states
 //操作方法
 const action = {
+    //切换主题
+    changeTheme(){
+        if(state.theme == 'light'){
+            state.theme = ''
+            window.document.documentElement.removeAttribute('data-theme')
+            // @ts-ignore
+            document.getElementById('theme_light').remove()
+        }else{
+            state.theme = 'light'
+            window.document.documentElement.setAttribute('data-theme','light')
+            const el = document.createElement('link')
+            el.rel='stylesheet'
+            el.id = 'theme_light'
+            el.href="eadmin/theme/light/index.css"
+            document.getElementsByTagName('head')[0].appendChild(el)
+        }
+    },
+    //表格grid刷新
+    gridActivatedRefresh(bool:boolean){
+        states.gridActivatedRefresh = bool
+    },
     //刷新
     refresh(bool:boolean){
         states.refresh = bool
@@ -109,7 +139,7 @@ const action = {
         if (index === -1) {
             // @ts-ignore
             const menu = findTree(state.menus, url.substr(1), 'url')
-            if (menu) {
+            if (menu && state.tagMenuMode) {
                 states.mainComponent.push({
                     // @ts-ignore
                     title: menu.name || url,
@@ -143,7 +173,6 @@ const action = {
             //@ts-ignore
             state.mainDescription = states.mainComponent[index].description || ''
         }
-        action.loading(false)
     },
     //关闭错误页面
     errorPageClose() {
@@ -191,6 +220,8 @@ const action = {
                     states.info.webName = res.data.webName
                     states.info.dropdownMenu = res.data.dropdownMenu
                     states.info.init = res.data.init || []
+                    states.topMenuMode = res.data.topMenu
+                    states.tagMenuMode = res.data.tagMenu
                 }
                 resolve(res)
             }).catch((res: any) => {

@@ -44,20 +44,19 @@ class Plug extends Command
         //src目录
         $plugSrc = $plugNameDir.'src'.DIRECTORY_SEPARATOR;
         if(!is_dir($plugSrc)) mkdir($plugSrc);
+        //config文件
+        file_put_contents($plugSrc.'config.php','<?php');
         $res =  $this->composerFile($plugNameDir);
         if($res){
             $this->serviceFile($plugSrc);
-            $this->versionFile($plugNameDir);
+           
             file_put_contents($plugSrc.'README.md','# E-admin Extension');
             $output->writeln('<info>created successfully.</info>');
         }else{
             $output->error('创建失败 (Creation failed)');
         }
     }
-    protected function versionFile($dir){
-        $stub =$this->getStubs('version');
-        return file_put_contents($dir.'version.php',$stub);
-    }
+    
     protected function composerFile($dir){
         $stub =$this->getStubs('composer.json');
         $composerContent = str_replace([

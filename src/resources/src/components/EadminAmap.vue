@@ -117,7 +117,7 @@ export default defineComponent({
         resizeEnable: true
       })
 
-      if (props.modelValue) {
+      if (mapLat && mapLng) {
         position()
       } else {
         AMap.plugin('AMap.Geolocation', () => {

@@ -9,6 +9,7 @@ use Eadmin\component\form\FormAction;
 use Eadmin\detail\Detail;
 use Eadmin\grid\Filter;
 use Eadmin\grid\Grid;
+use Eadmin\component\basic\Html;
 {%model_namespace%}
 
 /**

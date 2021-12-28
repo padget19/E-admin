@@ -14,7 +14,6 @@ interface FormInterface
 
     public function getData(string $field = null, $data = null);
     
-    public function getDataAll();
     
     public function save(array $data);
 

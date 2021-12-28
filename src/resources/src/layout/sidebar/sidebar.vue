@@ -3,10 +3,8 @@
         <logo :collapse="sidebar.opend"></logo>
         <el-scrollbar style="height: calc(100vh - 60px)">
             <el-menu :default-active="activeIndex"
-                     text-color="#FFFFFF"
                      :collapse="!sidebar.opend"
                      mode="vertical"
-                     background-color="#000000"
                      @select="select"
                      :default-openeds="defaultOpeneds"
             >
@@ -38,23 +36,27 @@
             const defaultOpeneds = ref([])
             //默认展开子菜单
             state.menus.forEach(res => {
+              if(state.topMenuMode){
                 if(res.children){
-                    res.children.forEach(item=>{
-                        defaultOpeneds.value.push(item.id+'')
-                    })
+                  res.children.forEach(item=>{
+                    defaultOpeneds.value.push(item.id+'')
+                  })
                 }
+              }else{
+                defaultOpeneds.value.push(res.id+'')
+              }
             })
             //侧边栏菜单渲染
             const menus = computed(() => {
                 let menu = null
-                if(state.device === 'mobile'){
-                    menu = state.menus
-                }else{
+                if(state.topMenuMode && state.device === 'desktop'){
                     state.menus.forEach(res => {
                         if (res.id == state.menuModule && res.children) {
                             menu = res.children
                         }
                     })
+                }else{
+                    menu = state.menus
                 }
                 return menu
             })
@@ -73,6 +75,7 @@
                     action.sidebarOpen(!sidebar.opend)
                 }
                 let menu = findTree(state.menus, id, 'id')
+                action.gridActivatedRefresh(false)
                 link(menu.url)
             }
 

@@ -1,14 +1,14 @@
 <template>
     <el-main class='eadmin-form'>
-        <el-form ref="eadminForm" :label-position="labelPosition" v-bind="$attrs" @submit.native.prevent>
+        <el-form ref="eadminForm" :label-position="labelPosition" v-bind="$attrs">
             <slot></slot>
             <render :data="stepResult"></render>
             <el-form-item v-if="!action.hide" v-bind="action.attr">
-                <slot name="leftAction"></slot>
+                <render v-for="item in action.leftAction" :data="item"></render>
                 <render v-if="action.submit" :loading="loading" :data="action.submit" :disabled="disabled"></render>
                 <render v-if="action.reset" :data="action.reset" @click="resetForm"></render>
                 <render v-if="action.cancel" :data="action.cancel" @click="cancelForm"></render>
-                <slot name="rightAction"></slot>
+                <render v-for="item in action.rightAction" :data="item"></render>
             </el-form-item>
             <slot name="footer"></slot>
         </el-form>
@@ -39,7 +39,10 @@
             reset:Boolean,
             submit:Boolean,
             validate:Boolean,
-            step:Number,
+            step:{
+                type:Number,
+                default:1,
+            },
             watch:{
                 type:Array,
                 default:[],
@@ -75,26 +78,37 @@
             })
             const debounceWatch = debounce((args)=>{
                 const length = watchData.length
-                watchData.push({
-                    field:args[0],
-                    newValue:args[1],
-                    oldValue:args[2],
-                })
+                if(JSON.stringify(args[1]) != JSON.stringify(args[2])){
+                    watchData.push({
+                        field:args[0],
+                        newValue:args[1],
+                        oldValue:args[2],
+                    })
+                }
                 if(length === 0){
                     watchListen()
                 }
             }, 300)
             //watch监听变化
             const watchData = []
+
             props.watch.forEach(field=>{
                 watchData.push({
                     field:field,
                     newValue:ctx.attrs.model[field],
                     oldValue:ctx.attrs.model[field],
                 })
-                watch(()=>ctx.attrs.model[field],(newValue,oldValue)=>{
-                    debounceWatch([field,newValue,oldValue],field)
-                },{deep:true})
+                if(isReactive(ctx.attrs.model[field])){
+                    watch(computed(()=>{
+                        return JSON.stringify(ctx.attrs.model[field])
+                    }),(newValue,oldValue)=>{
+                        debounceWatch([field,JSON.parse(newValue),JSON.parse(oldValue)],field)
+                    },{deep:true})
+                }else{
+                    watch(()=>ctx.attrs.model[field],(newValue,oldValue)=>{
+                        debounceWatch([field,newValue,oldValue],field)
+                    })
+                }
             })
             watchListen()
             //监听watch变化数据队列执行
@@ -116,17 +130,14 @@
                     request({
                         url: props.setAction,
                         method: props.setActionMethod,
-                        data: {
+                        data: Object.assign({
                             formField:ctx.attrs.formField,
                             field:field,
                             newValue:newValue,
                             oldValue:oldValue,
-                            form:ctx.attrs.model,
+                            form:submitData(),
                             eadmin_form_watch:true,
-                            eadmin_class:ctx.attrs.model['eadmin_class'],
-                            eadmin_function:ctx.attrs.model['eadmin_function'],
-                            eadmin_app:ctx.attrs.model['eadmin_app'],
-                        }
+                        },ctx.attrs.callMethod)
                     }).then(res=>{
                         res.data.showField.forEach(field=>{
                             proxyData[field] = 1
@@ -172,8 +183,27 @@
                     ctx.emit('update:step',++props.step)
                 }
             })
+            function submitData() {
+                const submitData = JSON.parse(JSON.stringify(ctx.attrs.model))
+                forEach(submitData,function (val,key) {
+                    if(props.exceptField.indexOf(key) > -1){
+                        delete submitData[key]
+                    }else if(Array.isArray(val)){
+                        forEach(val,function (many) {
+                            forEach(many,function (value,field) {
+                                if(props.exceptField.indexOf(field) > -1){
+                                    delete many[field]
+                                }
+                            })
+                        })
+                    }
+                })
+                submitData.eadmin_step_num = props.step + 1
+                return submitData
+            }
             //提交
             function sumbitForm(validate=false) {
+
                 ctx.emit('update:submit',false)
                 let params = {}
                 if(validate){
@@ -182,26 +212,13 @@
                 if(props.setAction){
                     clearValidator()
                     eadminForm.value.validate((bool,validateFields)=>{
-                        const submitData = JSON.parse(JSON.stringify(ctx.attrs.model))
-                        forEach(submitData,function (val,key) {
-                            if(props.exceptField.indexOf(key) > -1){
-                                delete submitData[key]
-                            }else if(Array.isArray(val)){
-                                forEach(val,function (many) {
-                                    forEach(many,function (value,field) {
-                                        if(props.exceptField.indexOf(field) > -1){
-                                            delete many[field]
-                                        }
-                                    })
-                                })
-                            }
-                        })
+
                         if(bool){
                             http({
                                 url: props.setAction,
                                 params:params,
                                 method: props.setActionMethod,
-                                data: submitData
+                                data: submitData()
                             }).then(res=>{
                                 if(res.code === 422){
                                     for (let field in res.data){
@@ -232,7 +249,7 @@
                                         stepResult.value = res.data
                                         ctx.emit('update:step',++props.step)
                                     }
-                                    ctx.emit('success')
+                                    ctx.emit('success',res)
                                     ctx.emit('PopupRefresh')
                                     ctx.emit('gridRefresh')
                                 }
@@ -310,6 +327,7 @@
                 ctx.emit('success')
             }
             return {
+                sumbitForm,
                 stepResult,
                 disabled,
                 eadminForm,
@@ -323,17 +341,6 @@
 </script>
 
 <style scoped>
-.eadmin-dialog .el-form-item:last-child{
-   margin-bottom: 0;
-}
-.eadmin-dialog .footer{
-    position: absolute;
-    bottom: 0;
-    background: #ffffff;
-    width: 100%;
-    margin-bottom: 0;
-    padding-bottom:10px;
-}
 .eadmin-form{
     background: rgb(255, 255, 255);
     border-radius: 4px;

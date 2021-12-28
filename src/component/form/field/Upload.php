@@ -6,8 +6,11 @@ namespace Eadmin\component\form\field;
 
 use Eadmin\Admin;
 use Eadmin\component\basic\Button;
+use Eadmin\component\Component;
 use Eadmin\component\form\Field;
 
+use Eadmin\component\form\FormItem;
+use Eadmin\service\FileService;
 use Overtrue\Flysystem\Qiniu\Plugins\UploadToken;
 use think\facade\Filesystem;
 use think\helper\Str;
@@ -25,6 +28,7 @@ use think\helper\Str;
  * @method $this chunk(bool $value = true) 本地分片上传
  * @method $this url(string $value) 上传url
  * @method $this params(array $value) 上传参数
+ * @method $this inputShow(bool $value = true) 显示输入框
  * @package Eadmin\component\form\field
  */
 class Upload extends Field
@@ -34,12 +38,12 @@ class Upload extends Field
     public function __construct($field = null, string $value = '')
     {
         parent::__construct($field, $value);
-        $this->attr('url', '/eadmin/upload');
+        $this->url('/eadmin/upload');
         $this->attr('token', Admin::token()->get());
         $uploadType = config('admin.uploadDisks');
+        $this->inputShow(true);
         $this->disk($uploadType);
     }
-
 
 
     /**
@@ -48,9 +52,10 @@ class Upload extends Field
      */
     public function disk($diskType)
     {
-        $config          = config('filesystem.disks.' . $diskType);
-        $uptype          = $config['type'];
-        $this->attr('upType', $diskType);
+        $config = config('filesystem.disks.' . $diskType);
+        $uptype = $config['type'];
+        $this->attr('disk', $diskType);
+        $this->attr('upType', $uptype);
         if ($uptype == 'qiniu') {
             $this->attr('bucket', $config['bucket']);
             $this->attr('domain', $config['domain']);
@@ -67,6 +72,7 @@ class Upload extends Field
         return $this;
     }
 
+
     /**
      * 指定保存目录
      * @param string $path 目录地址
@@ -79,54 +85,32 @@ class Upload extends Field
         $this->attr('saveDir', $path);
         return $this;
     }
-
-    /**
-     * 显示尺寸
-     * @param int $width 宽度
-     * @param int $height 高度
-     * @return $this
-     */
-    public function size($width, $height)
-    {
-        $this->attr('width', $width);
-        $this->attr('height', $height);
-        return $this;
-    }
-
-    /**
-     * 图片建议提示
-     * @param int $width 宽度
-     * @param int $height 高度
-     */
-    public function helpSize($width,$height){
-        $this->help("建议上传图片尺寸 $width * $height");
-        return $this;
-    }
-
     /**
      * 限制文件上传大小
      * @param $value
      * @return $this
      */
-    public function fileSize($value){
-        $this->attr('fileSizeText',$value);
-        $value = str_replace('b','',strtolower($value));
+    public function fileSize($value)
+    {
+        $this->attr('fileSizeText', $value);
+        $value = str_replace('b', '', strtolower($value));
         $pow = 1;
-        if(strpos($value,'k')){
-            $pow =  pow(1024,1);
-        }elseif (strpos($value,'m')){
-            $pow =  pow(1024,2);
-        }elseif (strpos($value,'g')){
-            $pow =  pow(1024,3);
-        }elseif (strpos($value,'t')){
-            $pow =  pow(1024,4);
+        if (strpos($value, 'k')) {
+            $pow = pow(1024, 1);
+        } elseif (strpos($value, 'm')) {
+            $pow = pow(1024, 2);
+        } elseif (strpos($value, 'g')) {
+            $pow = pow(1024, 3);
+        } elseif (strpos($value, 't')) {
+            $pow = pow(1024, 4);
         }
-        $value = str_replace(['k','m','g','t'],'',$value);
+        $value = str_replace(['k', 'm', 'g', 't'], '', $value);
         //字节
         $value = $value * $pow;
-        $this->attr('fileSize',$value);
+        $this->attr('fileSize', $value);
         return $this;
     }
+
     /**
      * 限制上传类型
      * @param string|array $val
@@ -136,29 +120,36 @@ class Upload extends Field
         if (is_string($val)) {
             $val = explode(',', $val);
         }
-        $val   = array_map(function ($item) {
+        $val = array_map(function ($item) {
             return ".{$item}";
         }, $val);
         $accept = implode(',', $val);
+        $this->attr('ext', $accept);
         $this->attr('accept', $accept);
         return $this;
     }
+
     public function jsonSerialize()
     {
-        if($this->attr('upType') === 'local' && is_null($this->attr('finder'))){
-            $filesystem = Admin::dispatch('/filesystem');
+        if (is_null($this->attr('finder'))) {
+            $finder = Admin::dispatch('/filesystem?type=1');
             $uploadButton = clone $this;
             $uploadButton->finder(false)
                 ->attr('foreverShow', true)
-                ->disk('local')
                 ->content(
                     Button::create('上传')
                         ->icon('el-icon-upload')
                         ->sizeMini()
-                );
+                )
+                ->inputShow(false)
+                ->isUniqidmd5()
+                ->multiple();
             $uploadButton->bindValue('', 'modelValue', null);
-            $filesystem->attr('upload',$uploadButton);
-            $this->attr('finder',$filesystem);
+            if($finder instanceof Component){
+                $filesystem = $finder->sidebar()->attr('fileSystem');
+                $filesystem->attr('upload', $uploadButton);
+                $this->attr('finder', $finder);
+            }
         }
         return parent::jsonSerialize();
     }

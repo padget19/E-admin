@@ -12,9 +12,7 @@
         }
     ],
     "require": {
-        "php": ">=7.1.0",
-        "rockys/e-admin": "1.0.x-dev",
-        "ext-json": "*"
+        "php": ">=7.1.0"
     },
     "autoload": {
         "psr-4": {

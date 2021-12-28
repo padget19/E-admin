@@ -252,4 +252,19 @@ export function randomCoding(length){
     }
     return idvalue;
 }
-
+export function empty(value) {
+    if(!value && value !== 0){
+        return true
+    }
+    if(Array.isArray(value) && value.length == 0){
+        return true
+    }
+}
+export function offsetTop(el) {
+    console.log(el)
+    console.log(el.offsetTop)
+    if(el.parentElement) {
+        return offsetTop(el.parentElement) + el.offsetTop
+    }
+    return el.offsetTop
+}

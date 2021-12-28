@@ -31,7 +31,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-  @import "../styles/element-variables.scss";
+  @import "../styles/light";
   .down{
     color: $--color-primary;
   }

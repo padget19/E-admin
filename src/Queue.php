@@ -112,7 +112,7 @@ abstract class Queue
     {
         $this->init($job);
         try {
-            if ($this->handel($data)) {
+            if ($this->handle($data)) {
                 $this->success('<b style="color: green">任务完成</b>'.PHP_EOL.PHP_EOL);
             } else {
                 $this->error('<b style="color: red">任务失败</b>');

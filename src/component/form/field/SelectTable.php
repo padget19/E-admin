@@ -59,13 +59,7 @@ class SelectTable extends Field
      */
     public function from($from)
     {
-        $params = [];
-        if (is_string($from) || $from instanceof Url) {
-            $parse = parse_url($from);
-            if (isset($parse['query'])) {
-                parse_str($parse['query'], $params);
-            }
-        }
+        $params = Admin::parseUrlQuery($from);
         $from = Admin::dispatch($from);
         $this->params(array_merge($from->getCallMethod(),$params));
         return $this;
@@ -86,6 +80,7 @@ class SelectTable extends Field
         $this->selectRequest($closure,function ($datas){
             $this->successCode($datas);
         });
+        return $this;
     }
     public function options(\Closure $closure)
     {

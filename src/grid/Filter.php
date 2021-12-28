@@ -8,11 +8,20 @@
 
 namespace Eadmin\grid;
 
+use Carbon\Carbon;
+use Eadmin\component\basic\Button;
+use Eadmin\component\basic\Html;
+use Eadmin\component\basic\Space;
+use Eadmin\component\form\field\Select;
+use Eadmin\component\form\field\Spec;
 use Eadmin\component\form\FormAction;
+use Eadmin\component\form\FormItem;
 use Eadmin\component\layout\Row;
+use Eadmin\constant\Style;
 use Eadmin\form\Form;
 use think\db\Query;
 use think\facade\Db;
+use think\facade\Request;
 use think\Model;
 use think\model\Relation;
 use think\model\relation\BelongsTo;
@@ -21,7 +30,12 @@ use think\model\relation\HasOne;
 use think\model\relation\MorphMany;
 use think\model\relation\MorphOne;
 use Eadmin\form\field\Input;
+use think\model\relation\MorphTo;
 
+/**
+ * 筛选过滤器
+ * @mixin \Eadmin\component\form\field\Input
+ */
 class Filter
 {
     //模型
@@ -35,13 +49,15 @@ class Filter
     protected $relationLastDb = null;
     protected $relationLastMethod = '';
     protected $columnNum = 0;
+    protected $hideAction = false;
+
     public function __construct($model)
     {
         if ($model instanceof Model) {
             $this->model = $model;
-            $this->db    = $this->model->db();
+            $this->db = $this->model->db();
         } elseif ($model instanceof Query) {
-            $this->db    = $model;
+            $this->db = $model;
             $this->model = $model->getModel();
         }
         if ($this->db) {
@@ -52,19 +68,27 @@ class Filter
             ->removeAttr('labelWidth')
             ->removeAttr('setAction')
             ->size('small');
-        $this->form->actions(function (FormAction $action) {
-            $action->submitButton()->content('搜索')->sizeSmall()->icon('el-icon-search');
-            $action->resetButton()->sizeSmall();
-        });
+        $this->form->actions()->hide();
+    }
+
+    /**
+     * 占列
+     * @param int $span
+     */
+    public function md(int $span = 24)
+    {
+        $this->form->getLastItem()->md($span);
     }
 
     /**
      * 布局列数
      * @param $num
      */
-    public function column($num){
+    public function column($num)
+    {
         $this->columnNum = $num;
     }
+
     /**
      * 模糊查询
      * @param string $field 字段
@@ -249,8 +273,16 @@ class Filter
     public function between($field, $label = '')
     {
         $field = $this->parseFilter(__FUNCTION__, $field);
-        $this->form->text($field . '__between_start', $label)->placeholder("请输入开始$label");
-        $this->form->text($field . '__between_end', '-')->placeholder("请输入结束$label");
+        $formItem = $this->form->text($field . '__between_start', $label)->style(['width' => '160px'])->placeholder("开始$label")->getFormItem();
+        $components = $formItem->getComponent();
+        $formItem->clearContent();
+        $text = $this->form->text($field . '__between_end')->style(['width' => '160px'])->placeholder("结束$label");
+        $this->form->popItem();
+        array_push($components, '-');
+        array_push($components, $text);
+        $formItem->content(
+            Space::create()->content($components)
+        )->md(8);
         return $this;
     }
 
@@ -299,7 +331,7 @@ class Filter
     public function datetimeRange($field, $label = '')
     {
         $field = $this->parseFilter('dateBetween', $field);
-        return $this->form->datetimeRange($field . '__start', $field . '__end', $label);
+        return $this->form->datetimeRange($field . '__start', $field . '__end', $label)->md(8);
     }
 
     /**
@@ -310,8 +342,8 @@ class Filter
      */
     public function cascader(...$field)
     {
-        $cascader     = $this->form->cascader(...$field);
-        $requestField = 'cascader'.md5(implode(',', $field));
+        $cascader = $this->form->cascader(...$field);
+        $requestField = 'cascader' . md5(implode(',', $field));
         $cascader->bind($requestField, '');
         $cascader->bindAttr('modelValue', $requestField);
         $cascader->getFormItem()->prop($requestField);
@@ -330,7 +362,7 @@ class Filter
     public function dateRange($field, $label = '')
     {
         $field = $this->parseFilter('dateBetween', $field);
-        return $this->form->dateRange($field . '__start', $field . '__end', $label);
+        return $this->form->dateRange($field . '__start', $field . '__end', $label)->md(8);
     }
 
     /**
@@ -342,7 +374,7 @@ class Filter
     public function timeRange($field, $label = '')
     {
         $field = $this->parseFilter('dateBetween', $field);
-        return $this->form->timeRange($field . '__start', $field . '__end', $label);
+        return $this->form->timeRange($field . '__start', $field . '__end', $label)->md(8);
     }
 
     /**
@@ -384,16 +416,36 @@ class Filter
     }
 
     /**
+     * 单选框按钮
+     * @param array $options 选项值
+     * @param \Closure|null $closure 回调统计数量
+     */
+    public function radioButton(array $options, \Closure $closure = null)
+    {
+
+        return $this->radio($options, true, $closure);
+    }
+
+    /**
      * 单选框
      * @param array $options 选项值
+     * @param bool $buttonTheme 是否按钮样式
+     * @param \Closure|null $closure 回调统计数量
      * @return \Eadmin\component\form\field\RadioGroup
      */
-    public function radio(array $options)
+    public function radio(array $options, bool $buttonTheme = false, \Closure $closure = null)
     {
-        $item  = $this->form->popItem();
+        $options = ['' => '全部'] + $options;
+        foreach ($options as $value => $text) {
+            if (is_callable($closure)) {
+                $count = call_user_func($closure, $value);
+                $options[$value] = $text . " ($count)";
+            }
+        }
+        $item = $this->form->popItem();
         $field = $item->attr('prop');
         $label = $item->attr('label');
-        return $this->form->radio($field, $label)->options($options);
+        return $this->form->radio($field, $label)->options($options, $buttonTheme);
     }
 
     /**
@@ -403,7 +455,7 @@ class Filter
      */
     public function checkbox(array $options)
     {
-        $item  = $this->form->popItem();
+        $item = $this->form->popItem();
         $field = $item->attr('prop');
         $label = $item->attr('label');
         return $this->form->checkbox($field, $label)->options($options);
@@ -411,15 +463,15 @@ class Filter
 
     /**
      * 分组下拉框
-     * @param array  $options 选项值
+     * @param array $options 选项值
      * @param string $name 分组字段名
-	 * @param string $optionLabel 选项名称
-	 * @param string $id 选项id
+     * @param string $optionLabel 选项名称
+     * @param string $id 选项id
      * @return \Eadmin\component\form\field\Select
      */
     public function selectGroup(array $options, $name = 'options', $optionLabel = 'label', $id = 'id')
     {
-        $item  = $this->form->popItem();
+        $item = $this->form->popItem();
         $field = $item->attr('prop');
         $label = $item->attr('label');
         return $this->form->select($field, $label)->groupOptions($options, $name, $optionLabel, $id);
@@ -432,10 +484,58 @@ class Filter
      */
     public function select(array $options)
     {
-        $item  = $this->form->popItem();
+        $item = $this->form->popItem();
         $field = $item->attr('prop');
         $label = $item->attr('label');
         return $this->form->select($field, $label)->options($options);
+    }
+
+    /**
+     * 单选选择器
+     * @param string $field 字段
+     * @param string $label 标签
+     * @param array $options
+     * @return \Eadmin\component\form\field\Checktag
+     */
+    public function selectorOne($field, $label, $options = [])
+    {
+        $this->eq($field, $label);
+        $item = $this->form->popItem();
+        $field = $item->attr('prop');
+        $label = $item->attr('label');
+        $item =  $this->form->checkTag($field, $label)->options($options);
+        $item->getFormItem()->labelWidth('130px');
+        $this->form()->labelPosition('left');
+        return $item;
+    }
+    /**
+     * 多选选择器
+     * @param string $field 字段
+     * @param string $label 标签
+     * @param array $options
+     * @return \Eadmin\component\form\field\Checktag
+     */
+    public function selector($field, $label, $options = [])
+    {
+        $this->in($field, $label);
+        $item = $this->form->popItem();
+        $field = $item->attr('prop');
+        $label = $item->attr('label');
+        $item =  $this->form->checkTag($field, $label)
+            ->multiple()
+            ->options($options);
+        $item->getFormItem()->labelWidth('130px');
+        $this->form()->labelPosition('left');
+        return $item;
+
+    }
+
+    /**
+     * 隐藏
+     */
+    public function hide()
+    {
+        $this->form->getLastItem()->style(['display' => 'none']);
     }
 
     /**
@@ -449,8 +549,8 @@ class Filter
         $requestField = $field;
         if ($this->db) {
             if (is_string($field)) {
-                $field   = str_replace('.', '__', $field);
-                $fields  = explode('__', $field);
+                $field = str_replace('.', '__', $field);
+                $fields = explode('__', $field);
                 $dbField = array_pop($fields);
                 $requestField = $field;
                 if (count($fields) > 0) {
@@ -459,7 +559,7 @@ class Filter
                     };
                     while (count($fields) > 1) {
                         $relation = array_pop($fields);
-                        $func     = function (Filter $filter) use ($relation, $func, $dbField) {
+                        $func = function (Filter $filter) use ($relation, $func, $dbField) {
                             $filter->relationWhere($relation, $func);
                         };
                     }
@@ -469,7 +569,7 @@ class Filter
                 }
             } elseif (is_array($field)) {
                 $requestField = array_shift($field);
-                $dbField      = $field;
+                $dbField = $field;
             }
             $this->filterField($method, $dbField, $requestField);
         }
@@ -517,7 +617,7 @@ class Filter
                         continue;
                     }
                     $fieldData[$field] = $value;
-                    $res               = json_decode($fieldData[$field], true);
+                    $res = json_decode($fieldData[$field], true);
 
                     if (!is_null($res)) {
                         $fieldData[$field] = $res;
@@ -546,7 +646,7 @@ class Filter
 
     /**
      * @param string $method 方法
-     * @param string  $dbField 字段
+     * @param string $dbField 字段
      * @param $field
      * @param $data
      */
@@ -562,20 +662,20 @@ class Filter
                     break;
                 case 'dateBetween':
                     $betweenStart = $data[$field];
-                    $field        = str_replace('__start', '__end', $field);
-                    $betweenEnd   = $data[$field];
+                    $field = str_replace('__start', '__end', $field);
+                    $betweenEnd = $data[$field];
                     $sql = $this->db->whereBetweenTime($dbField, $betweenStart, $betweenEnd);
                     break;
                 case 'between':
                     $betweenStart = $data[$field];
-                    $field        = str_replace('__between_start', '__between_end', $field);
-                    $betweenEnd   = $data[$field];
+                    $field = str_replace('__between_start', '__between_end', $field);
+                    $betweenEnd = $data[$field];
                     $this->db->whereBetween($dbField, [$betweenStart, $betweenEnd]);
                     break;
                 case 'notBetween':
                     $betweenStart = $data[$field];
-                    $field        = str_replace('__between_start', '__between_end', $field);
-                    $betweenEnd   = $data[$field];
+                    $field = str_replace('__between_start', '__between_end', $field);
+                    $betweenEnd = $data[$field];
                     $this->db->whereNotBetween($dbField, [$betweenStart, $betweenEnd]);
                     break;
                 case 'like':
@@ -641,11 +741,11 @@ class Filter
     {
         if (method_exists($this->model, $relation_method)) {
             $relation = $this->model->$relation_method();
-            if ($relation instanceof Relation) {
-                $relationModel  = get_class($relation->getModel());
+            if ($relation instanceof Relation && !($relation instanceof MorphTo)) {
+                $relationModel = get_class($relation->getModel());
                 $relation_table = $relation->getTable();
-                $foreignKey     = $relation->getForeignKey();
-                $pk             = $relation->getLocalKey();
+                $foreignKey = $relation->getForeignKey();
+                $pk = $relation->getLocalKey();
                 if ($callback instanceof \Closure) {
                     $this->relationModel = new self(new $relationModel);
                     $this->relationModel->relationLastDb($this->relationLastDb, $this->relationLastMethod);
@@ -653,9 +753,9 @@ class Filter
                     $this->relationModel->setIfWhere($this->ifWhere);
                     call_user_func($callback, $this->relationModel);
                 }
-                $tmpDb       = clone $this->relationModel->db();
+                $tmpDb = clone $this->relationModel->db();
                 $relationSql = $tmpDb->removeWhereField('delete_time')->buildSql();
-                $res         = strpos($relationSql, 'WHERE');
+                $res = strpos($relationSql, 'WHERE');
                 if ($relation instanceof HasMany) {
                     $sql = $this->relationModel->db()->whereRaw("{$relation_table}.{$foreignKey}={$this->db->getTable()}.{$pk}")->buildSql();
                 } elseif ($relation instanceof BelongsTo) {
@@ -664,8 +764,8 @@ class Filter
                     $sql = $this->relationModel->db()->whereRaw("{$foreignKey}={$this->db->getTable()}.{$pk}")->buildSql();
                 } else if ($relation instanceof MorphOne || $relation instanceof MorphMany) {
                     $reflectionClass = new \ReflectionClass($relation);
-                    $propertys       = ['morphKey', 'morphType', 'type'];
-                    $propertyValues  = [];
+                    $propertys = ['morphKey', 'morphType', 'type'];
+                    $propertyValues = [];
                     foreach ($propertys as $var) {
                         $property = $reflectionClass->getProperty($var);
                         $property->setAccessible(true);
@@ -692,7 +792,7 @@ class Filter
 
     public function relationLastDb($db, $method)
     {
-        $this->relationLastDb     = $db;
+        $this->relationLastDb = $db;
         $this->relationLastMethod = $method;
     }
 
@@ -707,6 +807,23 @@ class Filter
     }
 
     /**
+     * 隐藏筛选操作 搜索和重置
+     * @param bool $bool
+     */
+    public function hideAction(bool $bool = true)
+    {
+        $this->hideAction = $bool;
+        $this->form->attr('hideAction', true);
+    }
+
+    public function __call($name, $arguments)
+    {
+        $components = $this->form->itemComponent();
+        $component = end($components);
+        call_user_func_array([$component, $name], $arguments);
+    }
+
+    /**
      * 返回db对象
      * @return Db
      */
@@ -718,22 +835,49 @@ class Filter
     /**
      * @return Form
      */
+    public function form()
+    {
+        return $this->form;
+    }
+
+    /**
+     * @return Form
+     */
     public function render()
     {
-        if($this->columnNum > 0){
+        $actions = Html::create([
+            Button::create('搜索')
+                ->typePrimary()
+                ->sizeSmall()
+                ->icon('el-icon-search')
+                ->event('click', [$this->form->bindAttr('submit') => true]),
+            Button::create('重置')->sizeSmall()
+                ->event('click', [$this->form->bindAttr('reset') => true]),
+        ])->whenShow(!$this->hideAction);
+        if ($this->columnNum > 0) {
             $formItems = [];
-            do{
+            do {
                 $formItem = $this->form->popItem();
-                if($formItem){
-                    array_unshift($formItems,$formItem);
+                if ($formItem) {
+                    array_unshift($formItems, $formItem);
                 }
-            }while ($formItem);
+            } while ($formItem);
             $row = new Row();
-            foreach ($formItems as $item){
-                $row->column($item,24 / $this->columnNum );
+            foreach ($formItems as $key => $item) {
+                $md = $item->md ?: 6;
+                if ($item->md) {
+                    $md = $item->md;
+                } else {
+                    $md = 24 / $this->columnNum;
+                }
+                $column = $row->column($item, $md);
             }
+            $row->column($actions, 3)->style(['margin-bottom' => '18px']);
             $this->form->content($row);
+        } else {
+            $this->form->push($actions);
         }
+
         return $this->form;
     }
 }

@@ -8,6 +8,8 @@
 
 namespace Eadmin\grid\excel;
 
+use Eadmin\Admin;
+use Eadmin\service\NoticeService;
 use Eadmin\service\QueueService;
 use think\facade\Filesystem;
 
@@ -52,7 +54,10 @@ class Csv extends AbstractExporter
         $queue = new QueueService(request()->get('system_queue_id'));
         $queue->percentage($count,$this->rowIndex-1,'正在导出');
         if($this->rowIndex >= $count){
-            $queue->progress('/upload/excel/' . $this->fileName . '.csv');
+            $filename = '/upload/excel/' . $this->fileName . '.csv';
+            
+            NoticeService::instance()->pushIcon(Admin::id(),'导出下载', '【下载文件】'.$this->fileName, 'el-icon-message','',request()->get('eadmin_domain').'/'.$filename);
+            $queue->progress($filename);
         }
     }
     public function export()

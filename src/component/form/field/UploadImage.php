@@ -82,23 +82,23 @@ class UploadImage extends Upload
             $ext = $file->extension();
 
             if (count($this->interventionCalls) > 0) {
-                try {
-                    $image = Image::make($realPath);
-                    $savePath = $file->getPath() . DIRECTORY_SEPARATOR . $filename;
-                    foreach ($this->interventionCalls as $call) {
-
+                $image = Image::make($realPath);
+                $savePath = $file->getPath() . DIRECTORY_SEPARATOR . $filename;
+                foreach ($this->interventionCalls as $call) {
+                    try {
                         call_user_func_array([$image, $call['method']], $call['arguments']);
+                    } catch (\Exception $exception) {
 
                     }
-                    $file = $image->encode(null, null)->getEncoded();
-                } catch (\Exception $exception) {
-
                 }
+                $file = $image->encode(null, null)->getEncoded();
             }
+
             $url = FileService::instance()->upload($file, $filename, $saveDir, $upType, $isUniqidmd5);
+
             $this->uploadThumbnail($url, $realPath, $ext, $saveDir, $upType);
             if (!$url) {
-                return json(['code' => 999, 'message' => admin_trans('admin.upload_fail')], 404);
+                return json(['code' => 999, 'message' => '上传失败'], 404);
             } else {
                 return json(['code' => 200, 'data' => $url], 200);
             }
@@ -127,7 +127,7 @@ class UploadImage extends Upload
      */
     public function helpSize($width, $height)
     {
-        $this->help(admin_trans('admin.upload_image_size') . " $width * $height");
+        $this->help("建议上传图片尺寸 $width * $height");
         return $this;
     }
 

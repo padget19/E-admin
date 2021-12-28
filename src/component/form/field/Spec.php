@@ -31,12 +31,19 @@ class Spec extends Field
         $this->formItem->form()->manyRelation('');
         $this->formItem->form()->setItemComponent($originItemComponent);
         foreach ($formItems as $formItem) {
-            $columns[] = [
+            $column = [
                 'title'=>$formItem->attr('label'),
                 'dataIndex'=>$formItem->attr('prop'),
                 'prop'=>$formItem->attr('prop'),
-                'component'=>$formItem
+                'component'=>$formItem,
+                'hide'=>false,
             ];
+            $component = $formItem->getComponent()[0];
+            if($component instanceof Input && $component->attr('type') == 'hidden'){
+                $column['hide'] = true;
+
+            }
+            $columns[] = $column;
             $formItem->removeAttr('label');
         }
         $validatorField = $this->formItem->form()->bindAttr('model') . 'Error';

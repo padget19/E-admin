@@ -105,7 +105,7 @@ class Admin extends Controller
             });
             $grid->quickSearch();
             $grid->setForm($this->form())->dialog();
-			$grid->hideDeleteButton();
+            $grid->hideDeleteButton();
         });
 
     }
@@ -117,7 +117,7 @@ class Admin extends Controller
      */
     public function updatePassword()
     {
-        return Form::create(new AdminModel(),function (Form $form){
+        return Form::create(new AdminModel(), function (Form $form) {
             $form->edit(\Eadmin\Admin::id());
             $form->password('old_password', '旧密码')->required();
             $form->password('new_password', '新密码')->rule([
@@ -140,11 +140,11 @@ class Admin extends Controller
      * 重置密码
      * @auth true
      * @login true
-	 * @param int $id 系统用户id
+     * @param int $id 系统用户id
      */
     public function resetPassword($id)
     {
-        return Form::create(new AdminModel(),function (Form $form) use ($id){
+        return Form::create(new AdminModel(), function (Form $form) use ($id) {
             $form->edit($id);
             $form->password('new_password', '新密码')->required()->rule([
                 'confirm' => '输入密码不一致',
@@ -165,7 +165,7 @@ class Admin extends Controller
      */
     public function form(): Form
     {
-        return Form::create(new AdminModel(),function (Form $form){
+        return Form::create(new AdminModel(), function (Form $form) {
             $userInput = $form->text('username', '用户账号')->rule([
                 'chsDash' => '用户账号只能是汉字、字母、数字和下划线_及破折号-',
                 'unique:system_user' => '用户名存在重复'
@@ -188,7 +188,7 @@ class Admin extends Controller
                 'email' => '请输入正确的邮箱',
             ]);
             if ($form->getData('id') != config('admin.admin_auth_id')) {
-                $auths = SystemAuth::where('status',1)->column('name', 'id');
+                $auths = SystemAuth::where('status', 1)->column('name', 'id');
                 $form->checkbox('roles', '访问权限')->options($auths, true);
             }
         });
@@ -205,6 +205,8 @@ class Admin extends Controller
         $data['info'] = \Eadmin\Admin::user();
         $data['webLogo'] = sysconf('web_logo');
         $data['webName'] = sysconf('web_name');
+        $data['topMenu'] = config('admin.topMenu', true);
+        $data['tagMenu'] = config('admin.tagMenu', true);
         $data['dropdownMenu'] = [
             DropdownItem::create(Dialog::create('个人信息')->title('个人信息')->form($this->editInfo())->appendToBody(true)),
             DropdownItem::create(Dialog::create('修改密码')->title('修改密码')->form($this->updatePassword())->appendToBody(true)),
@@ -219,7 +221,7 @@ class Admin extends Controller
      */
     public function editInfo()
     {
-        return Form::create(new AdminModel(),function (Form $form){
+        return Form::create(new AdminModel(), function (Form $form) {
             $form->edit(\Eadmin\Admin::id());
             $form->text('username', '用户名')->rule([
                 'chsDash' => '用户名只能是汉字、字母、数字和下划线_及破折号-'

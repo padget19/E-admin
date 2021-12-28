@@ -27,6 +27,8 @@ use Eadmin\component\form\Field;
  * @method $this defaultValue($value) 可选，选择器打开时默认显示的时间 Date(TimePicker) / string(TimeSelect) 可被new Date()解析(TimePicker) / 可选值(TimeSelect)
  * @method $this prefixIcon(string $icon) 自定义头部图标的类名
  * @method $this clearIcon(string $icon) 自定义清空图标的类名
+ * @method $this valueFormat(string $format) 显示在输入框中的格式 YYYY-MM-DD
+ * @method $this format(string $format) 显示在输入框中的格式 YYYY-MM-DD
  * @package Eadmin\component\form\field
  */
 class TimePicker extends Field

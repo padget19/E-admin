@@ -39,7 +39,7 @@ class Confirm extends Component
 
     /**
      * 创建确认框
-     * @param string $content 内容
+     * @param mixed $content 内容
      * @return Confirm
      */
     public static function create($content)

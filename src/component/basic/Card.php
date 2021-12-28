@@ -20,6 +20,7 @@ class Card extends Component
 
     public function __construct($content)
     {
+        parent::__construct();
         if (!empty($content)) {
             $this->content($content);
         }

@@ -13,6 +13,7 @@
             EadminErrorPage,
         },
         setup() {
+
             resize()
         }
     })

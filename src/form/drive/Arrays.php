@@ -37,9 +37,7 @@ class Arrays implements FormInterface
             return $data;
         }
     }
-    public function getDataAll(){
-        return [];
-    }
+    
     public function edit($id)
     {
         $this->data = $this->originData;

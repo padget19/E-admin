@@ -30,12 +30,16 @@ class FormAction extends Component
     protected $hideCancelButton = false;
     //隐藏操作
     protected $hideAction = false;
+    //左边自定义内容
+    protected $leftAction = [];
+    //右边自定义内容
+    protected $rightAction = [];
     public function __construct($form)
     {
+        parent::__construct();
         $this->form = $form;
         $submitField = $this->form->bindAttr('submit');
         $this->submitButton = Button::create('保存')->sizeMedium()
-            ->nativeType('submit')
             ->type('primary')
             ->event('click', [$submitField => true]);
         $this->resetButton = Button::create('重置')->sizeMedium();
@@ -117,7 +121,7 @@ class FormAction extends Component
      */
     public function addLeftAction($content)
     {
-        $this->form->content($content, 'leftAction');
+        $this->leftAction[] = $content;
     }
 
     /**
@@ -126,7 +130,7 @@ class FormAction extends Component
      */
     public function addRightAction($content)
     {
-        $this->form->content($content, 'rightAction');
+        $this->rightAction[] = $content;
     }
 
     public function render()
@@ -146,6 +150,8 @@ class FormAction extends Component
             'submit' => $this->submitButton,
             'reset' => $this->resetButton,
             'cancel' => $this->cancelButton,
+            'leftAction' => $this->leftAction,
+            'rightAction' => $this->rightAction,
         ]);
     }
 }

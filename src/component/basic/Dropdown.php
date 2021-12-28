@@ -25,6 +25,7 @@ class Dropdown extends Component
 
     public function __construct($content)
     {
+        parent::__construct();
         $this->menu = new DropdownMenu();
 
         $this->content(Html::create($content));

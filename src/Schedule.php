@@ -39,7 +39,6 @@ class Schedule
     protected $taskList = [];
     protected $timeDesc = '';
     protected $key = '';
-    public static $crontab = [];
     protected $name = '';
     public function __construct()
     {
@@ -51,7 +50,7 @@ class Schedule
     {
         $this->closure = $closure;
     }
-    
+
     /**
      * 任务调度
      * @param $name 定时任务名称
@@ -64,32 +63,17 @@ class Schedule
         $backtrace = array_pop($backtrace);
         $new = new self();
         $new->setClosure($closure);
-        $key = md5($backtrace['file'] . $name);
-        $new->key = $key;
-        self::$crontab[] = [
-            'key'=>$new->key,
-            'schedule'=>$new
-        ];
+        $new->key = md5($backtrace['file'] . $name);
         $cacheKey = 'crontab_' . $new->key . '_log';
         $log = Cache::get($cacheKey) ?: [];
         $new->name = $name;
         $this->taskList[$new->key] = ['id' => $new->key, 'name' => $name, 'schedule' => $new, 'file' => $backtrace['file'], 'log' => $log];
-        Event::listen(self::class, function ($crontab) use ($new, $cacheKey,$key) {
-          
-            if($crontab === $key || is_null($crontab)){
-                $new->run();
-            }
+        Event::listen(self::class, function () use ($new, $cacheKey) {
+            $new->run();
         });
         return $new;
     }
 
-    /**
-     * 是否每分钟任务
-     * @return bool
-     */
-    public function isMinuteTask(){
-        return $this->minuteRule > 0;
-    }
     public function list()
     {
         return $this->taskList;
@@ -102,9 +86,7 @@ class Schedule
 
     public function run($force = false)
     {
-        if ($this->secondRule > 0) {
-            $this->secondRule();
-        } elseif ($this->minuteRule > 0) {
+        if ($this->minuteRule > 0) {
             $this->minuteRule();
         } elseif ($this->hourRule > 0) {
             $this->hourRule();
@@ -119,12 +101,23 @@ class Schedule
         } elseif ($this->yearly) {
             $this->yearRule();
         }
-        
-        if (in_array($this->nowTime, $this->rule) || $force || in_array(date('Y-m-d H:i:s'), $this->rule)) {
+        if($this->secondRule > 0){
+            $secondTime = Cache::get($this->key);
+            if($secondTime == date('Y-m-d H:i:s') && $this->secondRule == 1){
+                return false;
+            }elseif($this->secondRule >1 && $secondTime){
+                $this->secondRule--;
+                return false;
+            }elseif ($this->secondRule >1){
+                $this->secondRule--;
+            }
+            Cache::set($this->key,date('Y-m-d H:i:s'),$this->secondRule);
+        }
+        if (in_array($this->nowTime, $this->rule) || $force || $this->secondRule > 0) {
+
             $message = '';
             $cacheKey = 'crontab_' . $this->key . '_log';
             $log = Cache::get($cacheKey) ?: [];
-            $log = array_slice($log,0,10);
             $time = microtime(true);
             $datetime = date('Y-m-d H:i:s');
             try {
@@ -284,24 +277,7 @@ class Schedule
         $this->yearly = true;
         $this->timeDesc = "每年";
     }
-    /**
-     * 秒钟规则生成
-     * @Author: rocky
-     * 2019/8/19 12:00
-     */
-    private function secondRule()
-    {
-        $second = 0;
-        $minute = date('i');
-        $nowHour = date('H');
-        while ($second <= 59) {
-            $this->datetime->setTime($nowHour, $minute,$second);
-            $second += $this->secondRule;
-            if ($second <= 59) {
-                array_push($this->rule, $this->datetime->format('Y-m-d H:i:s'));
-            }
-        }
-    }
+
     /**
      * 分钟规则生成
      * @Author: rocky

@@ -9,7 +9,9 @@
 namespace Eadmin\form;
 
 
+use Eadmin\form\event\Validating;
 use think\exception\HttpResponseException;
+use think\facade\Event;
 use think\facade\Request;
 use think\facade\Validate;
 
@@ -186,6 +188,7 @@ class ValidatorForm
                 $validate->remove($removeFields);
             }
         }
+        Event::until(Validating::class,$data);
         $result = $validate->batch(true)->check($data);
         if(Request::has('eadmin_validate') && $result){
             throw new HttpResponseException(json([

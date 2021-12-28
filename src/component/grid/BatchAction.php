@@ -26,6 +26,7 @@ class BatchAction extends Component
 
     public function __construct($content)
     {
+        parent::__construct();
         $this->attr('gridBatch',true);
         $this->event('gridRefresh',[]);
         $this->content($content);

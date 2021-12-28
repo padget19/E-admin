@@ -12,6 +12,7 @@ namespace Eadmin\form;
 use Eadmin\Admin;
 use Eadmin\component\basic\Button;
 use Eadmin\component\basic\Card;
+use Eadmin\component\basic\Divider;
 use Eadmin\component\basic\Html;
 use Eadmin\component\basic\Step;
 use Eadmin\component\basic\Steps;
@@ -27,6 +28,7 @@ use Eadmin\component\form\field\Input;
 use Eadmin\component\form\field\Map;
 use Eadmin\component\form\field\Select;
 use Eadmin\component\form\field\TimePicker;
+use Eadmin\component\form\field\UploadImage;
 use Eadmin\component\form\FormAction;
 use Eadmin\component\form\FormItem;
 use Eadmin\component\form\FormMany;
@@ -34,11 +36,16 @@ use Eadmin\component\form\step\FormSteps;
 use Eadmin\component\form\step\Result;
 use Eadmin\component\layout\Row;
 use Eadmin\contract\FormInterface;
+use Eadmin\form\drive\File;
+use Eadmin\form\event\Saved;
+use Eadmin\form\event\Saving;
+use Eadmin\form\event\Validating;
 use Eadmin\form\traits\ComponentForm;
 use Eadmin\form\traits\WatchForm;
 use Eadmin\traits\CallProvide;
 use Eadmin\traits\Exec;
 use Eadmin\traits\FormModel;
+use think\facade\Event;
 use think\facade\Request;
 use think\helper\Str;
 use think\Model;
@@ -73,7 +80,7 @@ use think\Model;
  * @method \Eadmin\component\form\field\Color color($field, $label = '') 颜色选择器
  * @method \Eadmin\component\form\field\Rate rate($field, $label = '') 评分组件
  * @method \Eadmin\component\form\field\Upload file($field, $label = '') 文件上传
- * @method \Eadmin\component\form\field\Upload image($field, $label = '') 图片上传
+ * @method \Eadmin\component\form\field\UploadImage image($field, $label = '') 图片上传
  * @method \Eadmin\component\form\field\Editor editor($field, $label = '') 富文本编辑器
  * @method \Eadmin\component\form\field\Tree tree($field, $label = '') 树形
  * @method \Eadmin\component\form\field\Cascader cascader(...$field, $label = '') 级联选择器
@@ -85,7 +92,8 @@ use think\Model;
  * @method \Eadmin\component\form\field\Checktag checkTag($field, $label = '') check标签
  * @method \Eadmin\component\form\field\Spec spec($field, $label = '') 规格
  * @method \Eadmin\component\form\field\Display display($field, $label = '') 显示
-*/
+ * @method \Eadmin\component\form\field\mdEditor mdEditor($field, $label = '') md编辑器
+ */
 class Form extends Component
 {
     use CallProvide, ComponentForm, WatchForm;
@@ -108,32 +116,34 @@ class Form extends Component
     protected $validator;
 
     protected $data = [];
-    //保存前回调
-    protected $beforeSave = null;
-    //保存后回调
-    protected $afterSave = null;
+
     //保存修改成功后跳转的url
     protected $redirectUrl = '';
 
     protected $batch = false;
     //排除字段
     protected $exceptField = [];
-    //初始化
-    protected static $init = null;
+
+
+    protected $imageUploads = [];
 
     public function __construct($data)
     {
+
         if ($data instanceof Model) {
             $this->drive = new \Eadmin\form\drive\Model($data);
+        } elseif (is_string($data) && is_file($data)) {
+            $this->drive = new File($data);
         } elseif ($data instanceof FormInterface) {
             $this->drive = $data;
         } else {
             $this->drive = new \Eadmin\form\drive\Arrays($data);
         }
+
         $field = Str::random(15, 3);
         $this->attr('exceptField', $this->exceptField);
         $this->bindAttr('model', $field);
-        $this->attr('formField',$field);
+        $this->attr('formField', $field);
         $this->bindAttValue('submit', false, true);
         $this->bindAttValue('reset', false, true);
         $this->bindAttValue('validate', false, true);
@@ -145,9 +155,7 @@ class Form extends Component
         $this->validator = new ValidatorForm();
         $this->validatorBind();
         $this->description(Request::param('eadmin_description'));
-        if (!is_null(self::$init)) {
-            call_user_func(self::$init, $this);
-        }
+        parent::__construct();
     }
 
     public static function create($data, \Closure $closure)
@@ -158,24 +166,6 @@ class Form extends Component
         return $self;
     }
 
-    /**
-     * 初始化
-     * @param \Closure $closure
-     */
-    public static function init(\Closure $closure)
-    {
-        self::$init = $closure;
-    }
-
-    /**
-     * 设置标题
-     * @param string $title
-     * @return string
-     */
-    public function title(string $title)
-    {
-        return $this->bind('eadmin_title', $title);
-    }
 
     /**
      * 居中对齐
@@ -183,10 +173,10 @@ class Form extends Component
      */
     public function alignCenter(int $width = 1000)
     {
-        if(empty($width)){
+        if (empty($width)) {
             $this->removeAttr('style');
-        }else{
-            $this->attr('style', ['width' => $width .'px', 'margin' => '0 auto']);
+        } else {
+            $this->attr('style', ['width' => $width . 'px', 'margin' => '0 auto']);
         }
     }
 
@@ -306,8 +296,8 @@ class Form extends Component
         $html = Html::create($content)->tag('div');
 
         //按步骤表单显示
-        $backtrace          = debug_backtrace(1, 5);
-        if($this->steps && $backtrace[4]['class'] == FormSteps::class  && $backtrace[4]['function'] == 'add'){
+        $backtrace = debug_backtrace(1, 5);
+        if ($this->steps && $backtrace[4]['class'] == FormSteps::class && $backtrace[4]['function'] == 'add') {
             $active = $this->steps->bindAttr('current');
             $count = $this->steps->count();
             $html->where($active, $count);
@@ -351,6 +341,7 @@ class Form extends Component
      */
     private function valueModel($component, $data = null)
     {
+
         foreach ($component->bindAttribute as $attr => $field) {
             $value = $this->drive->getData($field, $data);
 
@@ -388,19 +379,24 @@ class Form extends Component
             if ($component instanceof DatePicker || $component instanceof TimePicker) {
                 $value = empty($value) ? null : $value;
                 $this->setData($field, $value);
-            }elseif (($component instanceof Cascader || $component instanceof Map) && $attr != 'modelValue'){
-                if(is_array($value)) {
-                    $val = array_shift($value);
-                    $this->setData($field, $val);
-                    $component->default($value);
-                    $component->value($value);
-                }
-            }elseif ($component instanceof Map && $attr == 'modelValue' && is_array($value)){
+            } elseif (
+                ($component instanceof Cascader || $component instanceof Map) &&
+                $attr != 'modelValue' &&
+                is_array($value) &&
+                (!empty($component->getDefault()) || !empty($component->getValue()))
+            ) {
+                $val = array_shift($value);
+                $this->setData($field, $val);
+                $component->default($value);
+                $component->value($value);
+            } elseif ($component instanceof Map && $attr == 'modelValue' && is_array($value)) {
                 $this->setData($field, end($value));
             } else {
                 $this->setData($field, $value ?? '');
             }
+
             if (is_null($data)) {
+
                 $component->bindAttr($attr, $this->bindAttr('model') . '.' . $field, true);
             }
             $component->removeBind($field);
@@ -486,12 +482,12 @@ class Form extends Component
      * @param int $index 默认选项卡
      * @return $this
      */
-    public function tab($title, \Closure $closure,$index=1)
+    public function tab($title, \Closure $closure, $index = 1)
     {
         if (!$this->tab) {
             $this->tab = Tabs::create()->default($index);
             $prop = $this->tab->bindAttr('modelValue');
-            $this->attr('tabField',$prop);
+            $this->attr('tabField', $prop);
             $this->except([$prop]);
             $this->push($this->tab);
         }
@@ -512,6 +508,11 @@ class Form extends Component
         $formItems = array_slice($this->formItem, $offset);
         $this->formItem = array_slice($this->formItem, 0, $offset);
         return $formItems;
+    }
+
+    public function getFormItems()
+    {
+        return $this->formItem;
     }
 
     public function push($item)
@@ -553,11 +554,12 @@ class Form extends Component
             $row->gutter($gutter);
         }
         $formItems = $this->collectFields($closure);
+
         if (!empty($title)) {
-            $this->push("<h4 style='font-size:16px;'>{$title}</h4>");
+            $this->push(Divider::create()->content($title)->contentPosition('left'));
         }
         foreach ($formItems as $item) {
-            $column = $row->column($item, $item->md);
+            $column = $row->column($item, $item->md ?? 24);
             $column->setWhere($item->getWhere());
         }
         $this->push($row);
@@ -671,15 +673,15 @@ class Form extends Component
         foreach ($formItems as $item) {
             $formItem = clone $item;
             $columns[] = [
-                'title'=>$formItem->attr('label'),
-                'dataIndex'=>$formItem->attr('prop'),
-                'prop'=>$formItem->attr('prop'),
-                'component'=>$formItem
+                'title' => Html::create($formItem->attr('label')),
+                'dataIndex' => $formItem->attr('prop'),
+                'prop' => $formItem->attr('prop'),
+                'component' => $formItem
             ];
             $formItem->removeAttr('label');
             $manyItem->content($item);
         }
-        $manyItem->attr('columns',$columns);
+        $manyItem->attr('columns', $columns);
         $this->push($manyItem);
         return $manyItem;
     }
@@ -715,9 +717,8 @@ class Form extends Component
         $prop = $field;
         $component = $class::create($field);
         $componentArr = array_merge($inputs, $dates, $times);
-        if ($name == 'image') {
-            //图片组件
-            $component->displayType('image')->accept('image/*')->size(120, 120)->isUniqidmd5();
+        if ($component instanceof UploadImage) {
+            $this->imageUploads[] = $component;
         }
         if (in_array($name, $componentArr)) {
             if ($component instanceof TimePicker || $component instanceof DatePicker) {
@@ -771,7 +772,18 @@ class Form extends Component
      */
     public function saved(\Closure $closure)
     {
-        $this->afterSave = $closure;
+        Event::listen(Saved::class, function ($data) use ($closure) {
+            $closure($data, $this->drive->model());
+        });
+    }
+
+    /**
+     * 验证前回调
+     * @param \Closure $closure
+     */
+    public function validating(\Closure $closure)
+    {
+        Event::listen(Validating::class, $closure);
     }
 
     /**
@@ -780,7 +792,7 @@ class Form extends Component
      */
     public function saving(\Closure $closure)
     {
-        $this->beforeSave = $closure;
+        Event::listen(Saving::class, $closure);
     }
 
     /**
@@ -862,17 +874,19 @@ class Form extends Component
     public function save(array $data)
     {
         $this->exec();
+        //上传图片处理
+        if ($response = $this->handleUploadFile()) {
+            return $response;
+        }
         //监听watch
         $this->watchCall($data);
         //验证数据
         $validatorMode = $this->isEdit() ? 2 : 1;
         $this->validator->check($data, $validatorMode);
         //保存前回调
-        if (!is_null($this->beforeSave)) {
-            $beforeData = call_user_func($this->beforeSave, $data);
-            if (is_array($beforeData)) {
-                $data = array_merge($data, $beforeData);
-            }
+        $beforeData = Event::until(Saving::class, $data);
+        if (is_array($beforeData)) {
+            $data = $beforeData;
         }
         if ($this->batch) {
             $result = $this->drive->saveAll($data['eadmin_batch']);
@@ -881,15 +895,18 @@ class Form extends Component
         }
 
         //保存回后调
-        if (!is_null($this->afterSave)) {
-            call_user_func_array($this->afterSave, [$data, $this->drive->model()]);
-        }
+        Event::until(Saved::class, $data);
         //步骤表单
         if (isset($data['eadmin_step'])) {
             $id = $this->drive->model()[$this->drive->getPk()];
             call_user_func_array($this->steps->getClosure(), [new Result($data, $result, $id)]);
         }
-        return $result;
+        if ($result !== false) {
+            $url = $this->redirectUrl;
+            admin_success('操作完成', '数据保存成功')->redirect($url);
+        } else {
+            admin_error_message('数据保存失败');
+        }
     }
 
     /**
@@ -921,6 +938,7 @@ class Form extends Component
         $item = end($this->formItem);
         return $item;
     }
+
     public function popItem()
     {
         $item = array_pop($this->formItem);
@@ -942,6 +960,20 @@ class Form extends Component
                         }
                     }
                 }
+            }elseif ($item instanceof Row) {
+                foreach ($item->content['default'] as $col) {
+                    foreach ($col->content['default'] as $content) {
+                        if ($content instanceof FormMany) {
+                            $this->valueModel($content);
+                        }
+                    }
+                }
+            } elseif ($item->attr('setpItem')) {
+                foreach ($item->content['default'] as $content) {
+                    if ($content instanceof FormMany) {
+                        $this->valueModel($content);
+                    }
+                }
             }
         }
         foreach ($this->itemComponent as $component) {
@@ -949,7 +981,8 @@ class Form extends Component
             $this->valueModel($component);
         }
         $field = $this->bindAttr('model');
-        $this->data = array_merge($this->callParams, $this->callMethod, $this->data);
+        $this->data = array_merge($this->callMethod, $this->data);
+        $this->attr('callMethod', $this->callMethod);
         //主键值
         if ($this->isEdit) {
             $pk = $this->drive->getPk();
@@ -963,8 +996,8 @@ class Form extends Component
         //将值绑定到form
         $this->bind($field, $this->data);
         //tab验证字段
-      
-        $this->attr('tabValidateField',$this->validator->getTabField());
+
+        $this->attr('tabValidateField', $this->validator->getTabField());
     }
 
     /**
@@ -1001,9 +1034,20 @@ class Form extends Component
         self::$component[$name] = $component;
     }
 
-    public function jsonSerialize()
+    public function handleUploadFile()
     {
 
+        foreach ($this->imageUploads as $imageUpload) {
+            $res = $imageUpload->handelUpload();
+
+            if ($res) {
+                return $res;
+            }
+        }
+    }
+
+    public function jsonSerialize()
+    {
         $this->exec();
         $this->parseComponent();
         $this->parseSteps();

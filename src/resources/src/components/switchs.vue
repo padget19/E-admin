@@ -13,7 +13,7 @@
             params:Object,
             field:String,
         },
-        emits: ['update:modelValue'],
+        emits: ['update:modelValue','change'],
         setup(props,ctx){
             const value = ref(false)
             if(props.modelValue == ctx.attrs.activeValue) {
@@ -40,6 +40,7 @@
                         failValue = ctx.attrs.activeValue
                     }
                     let params = props.params
+                    ctx.emit('change',val)
                     params[props.field] = val
                     request({
                         url:props.url,
@@ -67,6 +68,9 @@
     })
 </script>
 
-<style scoped>
-
+<style lang="scss" scoped>
+    @import '../styles/light';
+    .ant-switch-checked {
+        background-color: $--color-primary;
+    }
 </style>

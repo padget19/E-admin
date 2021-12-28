@@ -33,7 +33,10 @@ class RadioGroup extends Field
     {
         $this->disabledData = $data;
     }
-
+    public function horizontal(){
+        $this->attr('class','eadmin-horizontal');
+        return $this;
+    }
     /**
      * 设置选项数据
      * @param array $data 选项数据

@@ -56,6 +56,12 @@ abstract class EchartAbstract extends Component
 
     public function getOptions()
     {
+        if (!empty($this->series)) {
+            $this->options['series'] = $this->series;
+        }
+        if (!empty($this->legend) && !$this->hideLegend) {
+            $this->options['legend']['data'] = $this->legend;
+        }
         return $this->options;
     }
     public function hideLegend(){
@@ -63,12 +69,7 @@ abstract class EchartAbstract extends Component
     }
     public function jsonSerialize()
     {
-        if (!empty($this->series)) {
-            $this->options['series'] = $this->series;
-        }
-        if (!empty($this->legend) && !$this->hideLegend) {
-            $this->options['legend']['data'] = $this->legend;
-        }
+        $this->getOptions();
         $this->attr('options', $this->options);
         $this->attr('width', $this->width);
         $this->attr('height', $this->height);

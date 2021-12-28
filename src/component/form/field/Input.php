@@ -89,4 +89,13 @@ class Input extends Field
     {
         return $this->content($content, 'append');
     }
+
+    /**
+     * 内嵌
+     * @return $this
+     */
+    public function inline(){
+        $this->style(['width'=>'200px']);
+        return $this;
+    }
 }

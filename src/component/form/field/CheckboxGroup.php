@@ -15,6 +15,7 @@ use think\helper\Str;
  * @method $this min(int $num) 可被勾选的 checkbox 的最小数量
  * @method $this max(int $num) 可被勾选的 checkbox 的最大数量
  * @method $this checkAll($bool = true) 默认全选
+ * @method $this horizontal($bool = true) 竖排方向
  * @method $this onCheckAll($bool = true) 开启全选
  * @method $this textColor(string $color) 按钮形式的 Checkbox 激活时的文本颜色
  * @method $this fill(string $color) 按钮形式的 Checkbox 激活时的填充色和边框色
@@ -61,8 +62,8 @@ class CheckboxGroup extends Field
                 $disabled = false;
             }
             $options[] = [
-                'value'    => $value,
-                'label'    => $label,
+                'value' => $value,
+                'label' => $label,
                 'disabled' => $disabled,
             ];
         }
@@ -73,12 +74,15 @@ class CheckboxGroup extends Field
         }
         $mapField = Str::random(30, 3);
         $this->bindValue($options, 'options', $mapField);
-        $this->formItem->form()->except([$mapField]);
-        if (empty($this->formItem->form()->manyRelation())) {
+        if ($this->formItem) {
+            $this->formItem->form()->except([$mapField]);
+        }
+
+        if ($this->formItem && empty($this->formItem->form()->manyRelation())) {
             $mapField = $this->formItem->form()->bindAttr('model') . '.' . $mapField;
         }
         $checkboxOption = $checkbox
-            ->map($options,$mapField)
+            ->map($options, $mapField)
             ->mapAttr('label', 'value')
             ->mapAttr('key', 'value')
             ->mapAttr('slotDefault', 'label')

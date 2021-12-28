@@ -9,10 +9,14 @@
 namespace Eadmin\grid\excel;
 
 
+use app\common\facade\Token;
+use Eadmin\Admin;
+use Eadmin\service\NoticeService;
 use Eadmin\service\QueueService;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use think\facade\Filesystem;
 
 /**
@@ -32,15 +36,26 @@ class Excel extends AbstractExporter
     //数据开始列
     protected $startColumnIndex = 1;
     //数据开始行
+    protected $totalRowIndex = 0;
     protected $startRowIndex = 2;
     protected $rowIndex = 0;
+    //是否压缩
+    protected $compress = false;
+    //压缩文件路径集合
+    protected $compressFiles = [];
     //合并行字段条件
     protected $mergeCondtionField = null;
     //合并列字段
     protected $mergeRowFields = [];
     protected $fieldCellArr = [];
     protected $init = false;
+    protected $excelMaxRow = 65535;
     public function __construct()
+    {
+        $this->initExcel();
+    }
+
+    protected function initExcel()
     {
         $this->excel = new Spreadsheet();
         $this->sheet = $this->excel->getActiveSheet();
@@ -83,8 +98,10 @@ class Excel extends AbstractExporter
         $this->startRowIndex = $startRowIndex;
         $this->startColumnIndex = $startColumnIndex;
     }
-    protected function init(){
-        if(!$this->init){
+
+    protected function init()
+    {
+        if (!$this->init) {
             if (is_callable($this->callback)) {
                 call_user_func($this->callback, $this);
             }
@@ -122,20 +139,55 @@ class Excel extends AbstractExporter
             $this->init = true;
         }
     }
-    public function queueExport($count){
+
+    public function queueExport($count)
+    {
         $this->init();
         $this->writeRowData();
         $queue = new QueueService(request()->get('system_queue_id'));
-        $queue->percentage($count,$this->rowIndex-1,'正在导出');
-        if($this->rowIndex > $count){
-            $writer = IOFactory::createWriter($this->excel, 'Xls');
-            $path = Filesystem::path('excel');
-            $filesystem = new \Symfony\Component\Filesystem\Filesystem;
-            $filesystem->mkdir($path);
-            $writer->save($path.DIRECTORY_SEPARATOR.$this->fileName . '.xls');
-            $queue->progress('/upload/excel/' . $this->fileName . '.xls');
+        $queue->percentage($count, $this->totalRowIndex-1, '正在导出');
+        if ($this->totalRowIndex == $count) {
+            if ($this->compress) {
+                $count = round($count / $this->excelMaxRow);
+                if($count != count($this->compressFiles)){
+                    $this->save($this->fileName . '-' . count($this->compressFiles));
+                }
+                $zip = new \ZipArchive;
+                $path = Filesystem::disk('local')->path('excel');
+                $zipFileName = $path.DIRECTORY_SEPARATOR.$this->fileName.'.zip';
+                if(!$zip->open($zipFileName,\ZipArchive::CREATE)){
+                    $queue->error('压缩失败');
+                }
+                foreach ($this->compressFiles as $file){
+                    $zip->addFile($file,basename($file));
+                }
+                $zip->close();
+                foreach ($this->compressFiles as $file){
+                    unlink($file);
+                }
+                $filename = Filesystem::disk('local')->getConfig()->get('url') . '/excel/' . $this->fileName.'.zip';
+            }else{
+                $filename = $this->save($this->fileName);
+            }
+            $queue->progress($filename);
+            NoticeService::instance()->pushIcon(Admin::id(),'导出下载',  '【下载文件】'.$this->fileName, 'el-icon-message','',request()->get('eadmin_domain').'/'.$filename);
         }
     }
+
+    protected function save($name)
+    {
+        $writer = IOFactory::createWriter($this->excel, 'Xls');
+        $path = Filesystem::disk('local')->path('');
+        $filesystem = new \Symfony\Component\Filesystem\Filesystem;
+        $filesystem->mkdir($path . 'excel');
+        $filename = 'excel' . DIRECTORY_SEPARATOR . $name . '.xls';
+        $saveFile = $path . $filename;
+        $this->compressFiles[] = $saveFile;
+        $writer->save($saveFile);
+        $filename = Filesystem::disk('local')->getConfig()->get('url') . '/' . $filename;
+        return $filename;
+    }
+
     public function export()
     {
         $this->init();
@@ -179,17 +231,21 @@ class Excel extends AbstractExporter
     {
         return call_user_func_array([$this->excel, $name], $arguments);
     }
+
     /**
      * 设置数据到excel
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      */
     protected function writeRowData()
     {
-        $tmpMergeIndex = $this->rowIndex +1;
+        $tmpMergeIndex = $this->rowIndex + 1;
         $rowCount = count($this->data) + 1;
         $tmpMergeCondition = '';
+
         foreach ($this->data as $key => &$val) {
+            $this->totalRowIndex++;
             $this->rowIndex++;
+
             if ($this->mapCallback instanceof \Closure) {
                 $val = call_user_func($this->mapCallback, $val, $this->sheet);
             }
@@ -203,20 +259,27 @@ class Excel extends AbstractExporter
                     if (!empty($tmpMergeCondition)) {
                         foreach ($this->mergeRowFields as $field) {
                             $letter = $this->fieldCellArr[$field];
-                            if ( $this->rowIndex == $rowCount) {
+                            if ($this->rowIndex == $rowCount) {
                                 if ($tmpMergeCondition != $val[$this->mergeCondtionField]) {
                                     break;
                                 }
-                                $mergeIndex =  $this->rowIndex;
+                                $mergeIndex = $this->rowIndex;
                             } else {
-                                $mergeIndex =  $this->rowIndex - 1;
+                                $mergeIndex = $this->rowIndex - 1;
                             }
                             $this->sheet->mergeCells("{$letter}{$tmpMergeIndex}:{$letter}{$mergeIndex}");
                         }
                     }
                     $tmpMergeCondition = $val[$this->mergeCondtionField];
-                    $tmpMergeIndex =  $this->rowIndex;
+                    $tmpMergeIndex = $this->rowIndex;
                 }
+            }
+            if ($this->totalRowIndex % $this->excelMaxRow == 0) {
+                $this->compress = true;
+                $filename = $this->save($this->fileName . '-' . count($this->compressFiles));
+                $this->initExcel();
+                $this->init = false;
+                $this->init();
             }
         }
     }

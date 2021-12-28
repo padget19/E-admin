@@ -2,12 +2,15 @@
     <el-divider content-position='left' v-if="title && !table">{{title}}</el-divider>
     <el-form-item :label="title" v-if="table">
         <a-table row-key="id" v-if="value.length > 0" :data-source="value" size="small"  :pagination="false" :custom-row="customRow" class="manyItemEadminTable">
-            <a-table-column v-for="column in columns" :title="column.title" :data-index="column.prop">
+            <a-table-column v-for="column in columns" :data-index="column.prop">
+                <template #title>
+                    <render :data="column.title"></render>
+                </template>
                 <template #default="{ record , index}">
                     <render :slot-props="{ row:record ,$index:index ,propField:field,validator:$attrs.validator}" :data="column.component"></render>
                 </template>
             </a-table-column>
-            <a-table-column :width="70">
+            <a-table-column :width="70" v-if="!disabled">
                 <template #default="{ record , index}">
                     <el-space size="5">
                         <i class="el-icon-arrow-up" style="cursor: pointer;" @click="handleUp(index)" v-show='hoverIndex == index && value.length > 1 && index > 0'></i>
@@ -17,7 +20,7 @@
                  </template>
             </a-table-column>
         </a-table>
-        <el-button size="mini" type='primary' plain @click="add" v-if="limit == 0 || limit > value.length">新增</el-button>
+        <el-button size="mini" type='primary' plain @click="add" v-if="!disabled && (limit == 0 || limit > value.length)">新增</el-button>
     </el-form-item>
     <div v-else>
         <div v-for="(item,index) in value">

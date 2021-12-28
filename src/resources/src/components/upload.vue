@@ -29,9 +29,9 @@
         </span>
       </div>
     </span>
-    <span v-if="displayType=='image'" v-show="showUploadBtn" ref="btn"  @click="handelBrowse">
+    <span v-if="displayType=='image'" v-show="showUploadBtn || foreverShow" ref="btn"  @click="handelBrowse">
       <slot>
-        <label class="uploader-btn" :style="{height: styleHeight,width:styleHeight}">
+        <label class="uploader-btn" :style="{height: styleHeight,width:styleWidth}">
           <el-progress v-show="progressShow" class="progess" type="circle" :width="height" :percentage="percentage" />
           <i v-show="!progressShow" class="el-icon-plus progess" />
         </label>
@@ -69,25 +69,37 @@
           <i class="el-icon-close" @click="fileDelete(index)" /><i class="el-icon-close-tip" />
         </div>
       </div>
-      <span @click="handelBrowse" v-if="displayType == 'file'" v-show="showUploadBtn || foreverShow" ref="btn" >
+      <div class="fileButtonBox" v-if="displayType == 'file'" v-show="showUploadBtn || foreverShow" >
+        <div style="margin-right: 5px;width: 100%" v-if="inputShow">
+            <el-input v-model="inputValue" @change="changeInput"></el-input>
+        </div>
+        <span @click="handelBrowse" ref="btn">
         <slot>
-          <el-progress v-show="progressShow" style="margin: 13px 0px" :text-inside="true" :stroke-width="15" :percentage="percentage" />
-          <label class="fileButton" >
+
           <template v-if="drag">
-            <i class="el-icon-upload" />
-            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+             <label class="fileButton" >
+              <i class="el-icon-upload" />
+              <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+             </label>
           </template>
           <template v-else>
-            <i class="el-icon-upload" /> 上传文件
+            <el-button icon="el-icon-upload">上传文件</el-button>
           </template>
-          </label>
+           <el-progress v-show="progressShow" style="margin: 13px 0px" :text-inside="true" :stroke-width="15" :percentage="percentage" />
         </slot>
       </span>
+      </div>
     </span>
-    <el-dialog title="资源库" v-model="dialogVisible" :append-to-body="true" width="70%" destroy-on-close>
-      <keep-alive>
-        <render :data="finder" :limit="limit" :multiple="multiple" display="menu" :height="finderHeight" v-model:selection="selection"></render>
-      </keep-alive>
+    <el-dialog  title="资源库" v-model="dialogVisible" :append-to-body="true" width="70%" destroy-on-close>
+      <el-row :gutter="10">
+        <el-col :md="5" :sm="7" :xs="20" :span="5">
+            <render :data="finder" v-model:grid-params="gridParams" v-model:grid-value="gridValue" v-model:dataSource="finerCate"></render>
+        </el-col>
+        <el-col :md="19" :sm="24" :xs="24" :span="19">
+            <render :data="finder.attribute.fileSystem" :limit="limit" :multiple="multiple" display="menu" :height="finderHeight" v-model="gridValue" :cate="finerCate" :addParams="gridParams" v-model:selection="selection"></render>
+        </el-col>
+      </el-row>
+
       <template #footer>
         <div :class="multiple && selection.length > 0 ? 'footer':''">
           <div v-if="multiple && selection.length > 0">已选中: {{selection.length}}</div>
@@ -109,6 +121,7 @@ import {defineComponent, reactive, watch, nextTick, toRefs, ref,getCurrentInstan
 import {ElMessage, ElNotification} from 'element-plus'
 import {action} from "@/store";
 import router from "@/router";
+import request from '@/utils/axios'
 function noop() {}
 export default defineComponent({
   name: 'EadminUpload',
@@ -137,6 +150,10 @@ export default defineComponent({
     params: {
       type: Object,
       default: {}
+    },
+    disk: {
+      type: String,
+      default: 'local'
     },
     upType: {
       type: String,
@@ -187,6 +204,7 @@ export default defineComponent({
       default: false
     },
     foreverShow:Boolean,
+    inputShow:Boolean,
     onProgress: {
       type: Function,
       default: noop
@@ -214,7 +232,7 @@ export default defineComponent({
     const state = reactive({
       styleWidth: '',
       styleHeight: '',
-      selection:props.modelValue,
+      selection:[],
       files: [],
       dialogVisible: false,
       // 进度条显示
@@ -226,36 +244,16 @@ export default defineComponent({
       // 显示隐藏上传按钮
       showUploadBtn: true,
       oss: null,
-      finderHeight:(window.innerHeight / 2) + 'px'
+      finderHeight:(window.innerHeight / 2) + 'px',
+      gridParams:{},
+      gridValue:false,
+      finerCate:[],
+      inputValue:'',
     })
-    if(!Array.isArray(state.selection)){
-      state.selection = [state.selection]
-    }
     const instance = getCurrentInstance()
-    watch(()=>props.modelValue,val=>{
-      if (typeof val === 'string') {
-        state.files = val.split(',')
-        state.files = state.files.filter(function(s) {
-          return s && s.trim()
-        })
-      } else if (typeof val === 'object' && val instanceof Array) {
-        state.files = val
-      }
-    })
-    watch(()=>state.files,val=>{
-      if (!props.multiple && val.length === 1) {
-        state.showUploadBtn = false
-      }else if(props.multiple && props.limit > 0 && val.length >= props.limit){
-        state.showUploadBtn = false
-      } else{
-        state.showUploadBtn = true
-      }
-      state.selection = JSON.parse(JSON.stringify(val))
-      if(instance.parent && instance.parent.type.name === 'ElFormItem'){
-        instance.parent.provides.elFormItem.formItemMitt?.emit('el.form.change', [val.join(',')])
-      }
-      ctx.emit('update:modelValue', val.join(','))
-    },{deep:true})
+
+
+
     if (props.width != 'auto') {
       state.styleWidth = props.width + 'px'
     } else {
@@ -277,6 +275,30 @@ export default defineComponent({
     } else if (typeof props.modelValue === 'object' && props.modelValue instanceof Array) {
       state.files = props.modelValue
     }
+    watch(()=>state.files,val=>{
+      if (!props.multiple && val.length === 1) {
+        state.showUploadBtn = false
+      }else if(props.multiple && props.limit > 0 && val.length >= props.limit){
+        state.showUploadBtn = false
+      } else{
+        state.showUploadBtn = true
+      }
+      if(instance.parent && instance.parent.provides && instance.parent.provides.elFormItem){
+        instance.parent.provides.elFormItem.formItemMitt?.emit('el.form.change', [val.join(',')])
+      }
+      state.inputValue = val.join(',')
+      ctx.emit('update:modelValue', state.inputValue)
+    },{deep:true})
+    watch(()=>props.modelValue,val=>{
+      if (typeof val === 'string') {
+        state.files = val.split(',')
+        state.files = state.files.filter(function(s) {
+          return s && s.trim()
+        })
+      } else if (typeof val === 'object' && val instanceof Array) {
+        state.files = val
+      }
+    })
     let oss = null
     if (props.upType == 'oss') {
       oss = new OSS({
@@ -288,16 +310,22 @@ export default defineComponent({
     }
     const uploader = new Uploader({
       target: props.url,
-      query: Object.assign(props.params,{
-        saveDir: props.saveDir,
-        isUniqidmd5: props.isUniqidmd5,
-        upType: props.upType
-      }),
+      query: (file)=>{
+        return Object.assign(JSON.parse(JSON.stringify(props.params)),{
+          file_type:file.fileType,
+          saveDir: props.saveDir,
+          isUniqidmd5: props.isUniqidmd5,
+          upType: props.disk,
+        })
+      },
       testChunks: props.chunk,
       chunkSize: props.chunk ? 1 * 1024 * 1024 : 500 * 1024 * 1024,
       headers: {
         Authorization: props.token
       }
+    })
+    watch(()=>props.params,value=>{
+      uploader.opts.query = Object.assign(uploader.opts.query,value)
     })
     watch(()=>props.saveDir,value=>{
       uploader.opts.query.saveDir = value
@@ -324,13 +352,7 @@ export default defineComponent({
         uploader.cancel()
         return false
       }
-      if (checkExt(file)) {
-        if (props.upType == 'oss') {
-          ossMultipartUpload(file)
-        } else if (props.upType == 'qiniu') {
-          qiniuMultipartUpload(file)
-        }
-      } else {
+      if (!checkExt(file)) {
         uploader.cancel()
         ElMessage({
           type: 'error',
@@ -353,7 +375,17 @@ export default defineComponent({
         uploader.cancel()
         return false
       }
-      if (props.upType != 'oss' && props.upType != 'qiniu') {
+      if(props.displayType == 'file' && props.upType != 'local'){
+        files.forEach(file=>{
+
+          if (props.upType == 'oss') {
+            ossMultipartUpload(file)
+          } else if (props.upType == 'qiniu') {
+            qiniuMultipartUpload(file)
+          }
+        })
+        uploader.cancel()
+      }else{
         uploader.upload()
       }
       if (files.length > 0) {
@@ -371,7 +403,7 @@ export default defineComponent({
           if (!props.multiple) {
             state.files = []
           }
-          ctx.emit('success')
+          ctx.emit('success',res.data)
           state.files.push(res.data)
         }else if (res.code == 80020) {
           ElMessage({
@@ -462,8 +494,12 @@ export default defineComponent({
         })
       }
     })
-
-
+    function changeInput(val){
+      state.files = val.split(',')
+      state.files = state.files.filter(function(s) {
+        return s && s.trim()
+      })
+    }
     function uniqidMd5() {
       const rand = ('0000' + (Math.random() * Math.pow(36, 4) << 0).toString(36)).slice(-4)
       return md5(rand)
@@ -510,12 +546,16 @@ export default defineComponent({
     // 七牛云上传
     async function qiniuMultipartUpload(file) {
       let filename = ''
+      let name = ''
       if (props.isUniqidmd5) {
-        filename = props.saveDir + uniqidMd5() + '.' + file.getExtension()
+        name = uniqidMd5() + '.' + file.getExtension()
+        filename = props.saveDir + name
       } else {
+        name = file.name
         filename = props.saveDir + file.name
       }
       state.progressShow = true
+
       var observable = qiniu.upload(file.file, filename, props.uploadToken, {
         fname: filename,
         params: {}
@@ -533,7 +573,7 @@ export default defineComponent({
             message: err.message
           })
         },
-        complete(res) {
+        async complete (res) {
           uploader.removeFile(file)
           state.progressShow = false
           const url = `${props.domain}/${filename}`
@@ -541,16 +581,31 @@ export default defineComponent({
             state.files = []
           }
           state.files.push(url)
-          ctx.emit('success')
+          const fileData = {
+            name:name,
+            real_name:name,
+            url:url,
+            cate_id:0,
+            path:filename,
+            file_type:file.fileType,
+            ext:file.getExtension(),
+            file_size:file.getSize(),
+            uptype:props.upType,
+          }
+          await createUploadFile(fileData)
+          ctx.emit('success',url)
         }
       })
     }
     // 阿里云开始分片上传。
     async function ossMultipartUpload(file) {
       let filename = ''
+      let name = ''
       if (props.isUniqidmd5) {
-        filename = props.saveDir + uniqidMd5() + '.' + file.getExtension()
+        name = uniqidMd5() + '.' + file.getExtension()
+        filename = props.saveDir + name
       } else {
+        name = file.name
         filename = props.saveDir + file.name
       }
       state.progressShow = true
@@ -561,7 +616,7 @@ export default defineComponent({
           state.percentage = parseInt(percentage * 100)
           props.onProgress(state.percentage)
         }
-      }).then(result => {
+      }).then(async result => {
         // 生成文件下载地址
         uploader.removeFile(file)
         state.progressShow = false
@@ -570,7 +625,19 @@ export default defineComponent({
           state.files = []
         }
         state.files.push(url)
-        ctx.emit('success')
+        const fileData = {
+          name:name,
+          real_name:name,
+          url:url,
+          cate_id:0,
+          path:filename,
+          file_type:file.fileType,
+          ext:file.getExtension(),
+          file_size:file.getSize(),
+          uptype:props.upType,
+        }
+        await createUploadFile(fileData)
+        ctx.emit('success',url)
       }).catch(err => {
         state.progressShow = false
         ElMessage({
@@ -578,6 +645,20 @@ export default defineComponent({
           message: err
         })
       })
+    }
+    function createUploadFile(fileData){
+      return new Promise((resolve,reject) => {
+        request({
+          url:'/eadmin/uploadAfter',
+          method:'post',
+          data:Object.assign(fileData,{cate_id:props.params.cate_id})
+        }).then(res=>{
+          resolve(res)
+        }).catch((res)=>{
+          resolve(res)
+        })
+      })
+
     }
     function handelBrowse() {
       if(props.finder){
@@ -587,10 +668,14 @@ export default defineComponent({
     }
     function submit() {
       state.dialogVisible = false
-      state.files = state.selection
-
+      if(props.multiple){
+        state.files.push(state.selection)
+      }else{
+        state.files = state.selection
+      }
     }
     return {
+      changeInput,
       btn,
       submit,
       lastName,
@@ -738,5 +823,9 @@ export default defineComponent({
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+  .fileButtonBox{
+    display: flex;
+    width: 100%;
   }
 </style>

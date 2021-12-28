@@ -1,9 +1,8 @@
 
 .sidebar-container{
   width: $sideBarWidth;
-  background-color: $subMenuBg;
   box-shadow: 0px 8px 14.72px 1.28px rgba(229, 228, 230, 0.5);
-  border-right: 1px solid #e3e3e3;
+  background: #ffffff;
   height: 100%;
   transition: width .28s ease-in-out;
   .horizontal-collapse-transition {
@@ -12,8 +11,11 @@
   .el-menu {
     border-right: 0px!important;
   }
-  .el-submenu__title {
-    background-color: $subMenuHover !important;
+  .el-menu .el-submenu__title {
+    //background-color: $subMenuHover !important;
+  }
+  .el-menu--inline .el-submenu__title {
+   // background-color: #000000 !important;
   }
   // menu hover
   .el-submenu .el-submenu__title {
@@ -26,7 +28,7 @@
       -webkit-transition: all 0.3s;
     }
     &:hover {
-      border-left: 3px solid $--color-primary!important;
+      border-right: 3px solid $--color-primary!important;
       span {
         margin-left: 5px;
       }
@@ -43,7 +45,13 @@
     background: linear-gradient(to right,$--color-primary,rgba($--color-primary,1),rgba($--color-primary,.7)) !important;
   }
   .is-active>.el-submenu__title {
-    border-left: 3px solid $--color-primary!important;
+    border-right: 3px solid $--color-primary!important;
+  }
+  .is-active>.el-menu--inline .el-submenu__title {
+    border-right: none!important;
+  }
+  .el-submenu__title:hover,.el-menu-item:hover{
+    background-color: rgba($--color-primary,.1)!important;
   }
   & .nest-menu .el-submenu>.el-submenu__title,
   & .el-menu-item {
@@ -56,7 +64,7 @@
       -webkit-transition: all 0.3s;
     }
     //min-width: $sideBarWidth !important;
-    background-color: $subMenuBg !important;
+    //background-color: $subMenuBg !important;
     &:hover {
       span {
         margin-left: 5px;
@@ -86,7 +94,11 @@
   &  .el-menu-item.is-active {
     margin: 0!important;
     border-radius: 0 !important;
+    background: none!important;
+    box-shadow: none!important;
+    border-right: 3px solid $--color-primary!important;
   }
+
 }
 .mobile .sidebar-container {
   position: fixed;

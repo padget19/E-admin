@@ -46,7 +46,7 @@ class Result
      * @param string  $content 内容
      * @return \Eadmin\component\basic\Result
      */
-    public function sucess($title, $content)
+    public function sucess($title='操作成功', $content='')
     {
         return $this->result($title, $content, 'success')->extra($this->resetButton()->typePrimary());
     }

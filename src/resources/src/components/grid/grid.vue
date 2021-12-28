@@ -1,19 +1,16 @@
 <template>
     <div class="grid">
-
         <!--工具栏-->
         <div :class="['tools',custom?'custom':'']" v-if="!hideTools">
             <el-row style="padding-top: 10px">
-                <el-col :md="5" style="display: flex;margin-bottom: 10px" v-if="quickSearchOn">
+                <el-col :md="5" style="display: flex;margin-bottom: 10px" v-if="quickSearch">
                     <!--快捷搜索-->
-                    <el-input class="hidden-md-and-down" v-model="quickSearch" clearable prefix-icon="el-icon-search"
+                    <el-input class="hidden-md-and-down" v-model="quickSearchValue" clearable prefix-icon="el-icon-search"
                               size="small" style="margin-right: 10px;flex: 1" :placeholder="quickSearchText" @change="handleFilter"  @keyup.enter="handleFilter">
-                        <template #append>
-                            <el-button class="hidden-md-and-down searchButton" type="primary" size="small" @click="handleFilter">搜索</el-button>
-                        </template>
                     </el-input>
+                   <el-button class="hidden-md-and-down searchButton" type="primary" size="small" @click="handleFilter">搜索</el-button>
                 </el-col>
-                <el-col :md="quickSearchOn ? 15:20" style="margin-bottom: 10px">
+                <el-col :md="quickSearch ? 15:20" style="margin-bottom: 10px">
                     <!--添加-->
                     <render v-if="addButton" :data="addButton" :slot-props="grid"></render>
                     <!--导出-->
@@ -25,13 +22,13 @@
                             <el-dropdown-menu>
                                 <el-dropdown-item @click.native="exportData('page')">导出当前页</el-dropdown-item>
                                 <el-dropdown-item @click.native="exportData('select')" v-show="selectIds.length > 0">导出选中行</el-dropdown-item>
-                                <el-dropdown-item @click.native="exportData('all')">导出全部</el-dropdown-item>
+                                <el-dropdown-item v-if="!hideExportAll" @click.native="exportData('all')">导出全部</el-dropdown-item>
                             </el-dropdown-menu>
                         </template>
                     </el-dropdown>
-                    <el-button plain size="small" icon="el-icon-delete" v-if="!hideDeleteSelection && selectIds.length > 0" @click="deleteSelect">删除选中</el-button>
-                    <el-button plain size="small" icon="el-icon-help" v-if="trashed && selectIds.length > 0" @click="recoverySelect">恢复选中</el-button>
-                    <el-button type="danger" size="small" icon="el-icon-delete" v-if="!hideDeleteButton" @click="deleteAll()">{{trashed && !hideTrashed?'清空回收站':'清空数据'}}</el-button>
+                    <el-button plain size="small" icon="el-icon-delete" v-if="((!hideDeleteSelection && !trashed) || (trashed && !hideTrashedDelete)) && selectIds.length > 0" @click="deleteSelect">删除选中</el-button>
+                    <el-button plain size="small" icon="el-icon-help" v-if="!hideTrashedRestore && trashed && selectIds.length > 0" @click="recoverySelect">恢复选中</el-button>
+                    <el-button type="danger" size="small" icon="el-icon-delete" v-if="(!hideDeleteButton && !trashed)|| (trashed && !hideTrashedDelete)" @click="deleteAll()">{{trashed && !hideTrashed?'清空回收站':'清空数据'}}</el-button>
 
                     <render v-for="tool in tools" :data="tool" :ids="selectIds" :add-params="{eadmin_ids:selectIds}" :grid-params="params" :slot-props="grid"></render>
                 </el-col>
@@ -69,7 +66,9 @@
         </div>
         <div v-if="custom" >
             <a-list :data-source="tableData" :loading="loading" row-key="eadmin_id" v-bind="custom.attribute">
-                <template #header v-if="custom.header"><render :data="custom.header" :slot-props="grid"></render></template>
+                <template #header v-if="custom.header">
+                  <render :data="custom.header" :ids="selectIds" :add-params="{eadmin_ids:selectIds}" :grid-params="params" :slot-props="grid"></render>
+                </template>
                 <template #footer v-if="custom.footer"><render :data="custom.footer" :slot-props="grid"></render></template>
                 <template #renderItem="{ item }">
                     <a-list-item>
@@ -83,7 +82,7 @@
                 </template>
             </a-list>
         </div>
-        <div v-else>
+        <div ref="tableBox" v-else>
             <div v-if="isMobile" style="background: #ffffff;overflow: auto" v-loading="loading">
                 <el-row v-for="row in tableData" :key="row.eadmin_id" style="border-top: 1px solid rgb(240, 240, 240);">
                     <el-col :span="24" >
@@ -95,12 +94,29 @@
                 </el-row>
             </div>
             <!--表格-->
-            <a-table v-else :row-selection="rowSelection" @expand="expandChange" @change="tableChange" :columns="tableColumns" :data-source="tableData"  :expanded-row-keys="expandedRowKeys" :pagination="false" :loading="loading" v-bind="$attrs" row-key="eadmin_id" ref="dragTable">
+            <a-table v-else :row-selection="rowSelection" @expand="expandChange" @change="tableChange" :columns="tableColumns" :data-source="tableData"  :expanded-row-keys="expandedRowKeys" :pagination="false" :loading="loading" v-bind="$attrs" row-key="eadmin_id" ref="dragTable" class="eadmin_table">
                 <template #title v-if="header">
-                    <div class="header"><render :data="header" :slot-props="grid"></render></div>
+                    <div class="header"><render v-for="item in header" :data="item" :ids="selectIds" :add-params="{eadmin_ids:selectIds}" :grid-params="params"  :slot-props="grid"></render></div>
                 </template>
-                <template v-for="column in tableColumns" v-slot:[column.slots.title]>
-                    <render :data="column.header" :slot-props="grid"></render>
+                <template v-for="column in columnHeader" v-slot:[column.slots.title]>
+                    <render  :data="column.header" :slot-props="grid"></render>
+                </template>
+                <template #filterDropdown="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }">
+                    <div style="padding: 8px">
+                        <render :data="column.eadminFilterDropdown"></render>
+                        <div v-if="!filter.attribute.hideAction">
+                            <div style="background-color: #DCDFE6;height: 1px;margin: 10px 0"></div>
+                            <div style="margin-top: 5px">
+                                <el-button size="mini" type="primary" @click="columnFilter(confirm)">确定</el-button>
+                                <el-button size="mini" @click="columnFilterReset(column.prop)">重置</el-button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <template v-for="column in columnHeader" v-slot:[column.slots.filterIcon]>
+                  <div style="display: flex;align-items: center;justify-content: center">
+                    <i class="fa fa-filter" :style="{ color: empty(proxyData[filterField][column.prop]) ?  undefined :variables.theme  }" />
+                  </div>
                 </template>
                 <template #expandedRowRender="{ record  }" v-if="expandedRow">
                     <render :data="record.EadminExpandRow" :slot-props="grid"></render>
@@ -146,12 +162,12 @@
 </template>
 
 <script>
+    import variables  from '@/styles/theme.scss';
     import {defineComponent, ref, watch,reactive, inject,nextTick,computed,unref,onActivated,onMounted,onUnmounted} from "vue"
     import {useHttp} from '@/hooks'
-   // import {tableDefer} from '@/hooks/use-defer'
     import request from '@/utils/axios'
-    import {store} from '@/store'
-    import {forEach, unique, deleteArr, buildURL, findTree,treeMap} from '@/utils'
+    import {store,action} from '@/store'
+    import {forEach, unique, deleteArr, buildURL, debounce,treeMap,empty,findTree,offsetTop} from '@/utils'
     import {ElMessageBox,ElMessage} from 'element-plus'
     import Sortable from 'sortablejs'
     import {useRoute} from 'vue-router'
@@ -178,8 +194,17 @@
                 type:Array,
                 default:[]
             },
+            autoHeight: Boolean,
             hideDeleteButton: Boolean,
             hideTrashed: Boolean,
+            hideTrashedDelete: Boolean,
+            hideTrashedRestore: Boolean,
+            hideExportAll: Boolean,
+            queueExport: {
+              type:[Boolean,Number],
+              default:-1
+            },
+            quickSearch: Boolean,
             hideDeleteSelection: Boolean,
             expandedRow: Boolean,
             filter: [Object, Boolean],
@@ -198,12 +223,13 @@
             custom:[Object, Boolean],
         },
         inheritAttrs: false,
-        emits: ['update:modelValue','update:selection'],
+        emits: ['update:modelValue','update:selection','update:data'],
         setup(props, ctx) {
             const route = useRoute()
             const state = inject(store)
             const proxyData = props.proxyData
             const dragTable = ref('')
+            const tableBox = ref('')
             const grid = {grid:ctx.attrs.eadmin_grid, gridParam:ctx.attrs.eadmin_grid_param}
             const {loading,http} = useHttp()
             const selectRadio = ref(false)
@@ -211,10 +237,10 @@
                 selectRadio.value = props.selection[0]
             }
             const filterShow = ref(props.expandFilter)
-            const quickSearch = ref('')
+            const quickSearchValue = ref('')
             const selectIds = ref(props.selection || [])
             const expandedRowKeys = ref([])
-            const eadminActionWidth = ref(0)
+
             const trashed = ref(false)
             const excel  = reactive({
                 excelVisible:false,
@@ -223,23 +249,20 @@
                 file:'',
                 status:'',
             })
-            const quickSearchOn = ctx.attrs.quickSearch
             const quickSearchText = ctx.attrs.quickSearchText || '请输入关键字'
+            const originColumns = JSON.parse(JSON.stringify(props.columns))
             const columns = ref(props.columns)
             const tableData = ref([])
+            proxyData[ctx.attrs.eadmin_grid+'data'] = tableData
             if(props.static){
                 tableData.value = props.data
             }
-            // if(props.defer){
-            //     tableDefer(tableData.value,props.data)
-            // }else{
-            //     tableData.value = props.data
-            // }
+
             const total = ref(props.pagination.total || 0)
             const tools = ref(props.tools)
             const header = ref(props.header)
             let page = 1
-            let size = props.pagination.pageSize
+            let size = props.pagination.pageSize || 20
             let sortableParams = {}
             let filterInitData = null
             function globalRequestParams(){
@@ -254,15 +277,16 @@
                         delete filterData[key]
                     }
                 })
-                requestParams = Object.assign(requestParams, filterData,{quickSearch:quickSearch.value},route.query,props.params,props.addParams,sortableParams)
+                requestParams = Object.assign(requestParams, filterData,{quickSearch:quickSearchValue.value,eadminFilterField:props.filterField},route.query,props.params,props.addParams,sortableParams)
                 if(trashed.value){
                     requestParams = Object.assign(requestParams ,{eadmin_deleted:true})
                 }
                 return requestParams
             }
+
             onMounted(()=>{
                 if(!props.static){
-                    loading.value = true
+                  loading.value = true
                 }
             })
             onUnmounted((e)=>{
@@ -271,9 +295,11 @@
                 }
             })
             onActivated((e)=>{
-
-                if(!props.static){
-                    loading.value = true
+                if(!props.static && state.gridActivatedRefresh){
+                  loading.value = true
+                }
+                if(!state.gridActivatedRefresh){
+                  action.gridActivatedRefresh(true)
                 }
                 if(excel.excelTimer != null){
                     clearInterval(excel.excelTimer)
@@ -281,7 +307,7 @@
             })
             watch(() => props.modelValue, (value) => {
                 if(value){
-                    //quickSearch.value = ''
+                    //quickSearchValue.value = ''
                     loading.value = value
                 }
             })
@@ -291,45 +317,99 @@
                     loadData()
                 }
             })
+            if(props.filterField && props.filter.attribute.hideAction){
+                const filterDebounce = debounce(()=>{
+                    loading.value = true
+                },300)
+                watch(()=>proxyData[props.filterField], (value) => {
+                    filterDebounce('','eadmin_grid_filter')
+                },{deep:true})
+            }
             //动态控制列显示隐藏
-            const checkboxColumn = ref([])
-            checkboxColumn.value = props.columns.map(item => {
+            const checkboxColumn = ref(props.columns.map(item => {
                 return item.prop
+            }))
+            const columnHeader = computed(()=>{
+              return recursionColumn(computedColumn())
             })
-            const tableColumns = computed(()=>{
-                return columns.value.filter(item=>{
-                    if(item.prop === 'EadminAction'){
-                        item.width = eadminActionWidth.value
-                        //有滚动条操作列fixed
-                        if(dragTable.value && !item.fixed){
-                            const el = dragTable.value.$el.querySelectorAll('.ant-table-body')[0]
-                            const table = dragTable.value.$el.querySelectorAll('.ant-table-body > table')[0]
-                            if(table.clientWidth > el.clientWidth){
-                                item.fixed = 'right'
-                            }
-                        }
+            function recursionColumn(columns){
+              let data = []
+              columns.map(item=>{
+                data.push(item)
+                if(item.children){
 
-                    }
+                  data = data.concat(recursionColumn(item.children))
+                }
+              })
+              return data
+            }
+            function computedColumn() {
+                return columns.value.filter(item=>{
                     return checkboxColumn.value.indexOf(item.prop) >= 0 && !item.hide
                 })
-
-            })
+            }
+            const tableColumns = computed(computedColumn)
             nextTick(()=>{
                 if(proxyData[props.filterField]){
                     filterInitData = JSON.parse(JSON.stringify(proxyData[props.filterField]))
                 }
+                if(props.autoHeight){
+                  //自适应最大高度
+                  if(!ctx.attrs.scroll.y){
+                    ctx.attrs.scroll.y = window.innerHeight - offsetTop(tableBox.value) - 65
+                  }
+                }
                 dragSort()
             })
-            function actionAutoWidth(){
-                let width = 0
-                //操作列宽度自适应
-                document.getElementsByClassName('EadminAction').forEach(item=>{
-                    if(width < item.offsetWidth){
-                        width = item.offsetWidth
+            function tableAutoWidth(){
+                try {
+                    if(ctx.attrs.scroll.y){
+                        columns.value.forEach(column=>{
+                            let width = 0
+                            if(!column.width){
+                                document.getElementsByClassName('eadmin_table_th_'+column.prop).forEach(item=>{
+                                    let offsetWidth = item.parentNode.parentNode.parentNode.parentNode.offsetWidth
+                                    if(width < offsetWidth){
+                                        width = offsetWidth
+                                    }
+                                })
+                                document.getElementsByClassName('eadmin_table_td_'+column.prop).forEach(item=>{
+                                    if(width < item.parentNode.offsetWidth){
+                                        width = item.parentNode.offsetWidth
+                                    }
+                                })
+                                column.width = width
+                            }
+                        })
                     }
+                }catch (e) {
+
+                }
+                nextTick(()=>{
+                    //操作列自适应
+                    columns.value.forEach(item=> {
+                        if(item.prop === 'EadminAction'){
+                            if(!item.width){
+                                let width = 0
+                                document.getElementsByClassName('EadminAction').forEach(item => {
+                                  let offsetWidth = item.offsetWidth
+                                  if (width < offsetWidth) {
+                                    width = offsetWidth
+                                  }
+                                })
+                                item.width = width+20
+                            }
+                            //有滚动条操作列fixed
+                            if(dragTable.value && !item.fixed){
+                                const el = dragTable.value.$el.querySelectorAll('.ant-table-body')[0]
+                                const table = dragTable.value.$el.querySelectorAll('.ant-table-body > table')[0]
+                                if(table.clientWidth > el.clientWidth){
+                                    item.fixed = 'right'
+                                }
+                            }
+                        }
+                    })
                 })
-                width += 30
-                eadminActionWidth.value = width
             }
             //拖拽排序
             function dragSort(){
@@ -343,6 +423,7 @@
                             var oldIndex = evt.oldIndex;
                             var oldItem = tableData.value[oldIndex]
                             var startPage = (page-1) * size
+
                             const targetRow = tableData.value.splice(evt.oldIndex, 1)[0]
                             tableData.value.splice(evt.newIndex, 0, targetRow)
                             if(evt.newIndex != evt.oldIndex){
@@ -359,7 +440,7 @@
                 return new Promise((resolve, reject) =>{
                     request({
                         url: 'eadmin/batch.rest',
-                        params:Object.assign(props.params,route.query),
+                        params:Object.assign(props.params,props.addParams,route.query),
                         method: 'put',
                         data:{
                             action:action,
@@ -463,9 +544,9 @@
                     proxyData[props.filterField] = Object.assign(proxyData[props.filterField],JSON.parse(JSON.stringify(filterInitData)))
                 }
             }
+
             //请求获取数据
             function loadData() {
-
                 http({
                     url: props.loadDataUrl,
                     params: globalRequestParams()
@@ -476,9 +557,23 @@
                     tableData.value = res.data
                     total.value = res.total
                     header.value = res.header
+
+                    let action = findTree(originColumns,'EadminAction','prop')
+                    if(action && !action.width){
+                        action = findTree(columns.value,'EadminAction','prop')
+                        delete action.width
+                    }
                     tools.value = res.tools
                     nextTick(()=>{
-                        actionAutoWidth()
+                      if(state.gridFirst){
+                        setTimeout(()=>{
+                          state.gridFirst = false
+                          tableAutoWidth()
+                        })
+                      }else{
+                        tableAutoWidth()
+                      }
+
                     })
                 }).finally(() => {
                     ctx.emit('update:modelValue', false)
@@ -506,13 +601,12 @@
                         data: Object.assign({eadmin_ids: selectIds.value},props.params,{delete_time:null}),
                         method:'put',
                     }).then(res=>{
-                        loadData()
+                        loading.value = true
                     })
                 })
             }
             //删除请求
             function deleteRequest(message,ids) {
-
                 ElMessageBox.confirm(message,'是否继续?',{type: 'warning'}).then(()=>{
                     let params = {}
                     if(trashed.value){
@@ -524,7 +618,7 @@
                         method:'delete',
                     }).then(res=>{
                         selectIds.value = []
-                        loadData()
+                        loading.value = true
                     })
                 })
             }
@@ -566,37 +660,37 @@
                         eadmin_ids:selectIds.value
                 }
                 requestParams = Object.assign(globalRequestParams(),requestParams)
-                if(type == 'all'){
-                    excel.progress = 0
-                    excel.file = ''
-                    request({
-                        url:'/eadmin.rest',
-                        params: Object.assign(requestParams,{eadmin_queue:true})
-                    }).then(res=>{
-                        excel.status = ''
-                        excel.excelVisible = true
-                        excel.excelTimer = setInterval(()=>{
-                            request({
-                                url: 'queue/progress',
-                                params: {
-                                    id: res.data
-                                }
-                            }).then(result=>{
-                                excel.progress = result.data.progress
-                                if(result.data.status == 4){
-                                    excel.status = 'exception'
-                                    clearInterval(excel.excelTimer)
-                                }
-                                if(result.data.status == 3){
-                                    clearInterval(excel.excelTimer)
-                                    excel.status = 'success'
-                                    excel.file = result.data.history.slice(-2)[0].message
-                                }
-                            })
-                        },500)
-                    })
+                if(props.queueExport === true || (props.queueExport == -1 && type == 'all')){
+                  excel.progress = 0
+                  excel.file = ''
+                  request({
+                    url:'/eadmin.rest',
+                    params: Object.assign(requestParams,{eadmin_queue:true})
+                  }).then(res=>{
+                    excel.status = ''
+                    excel.excelVisible = true
+                    excel.excelTimer = setInterval(()=>{
+                      request({
+                        url: 'queue/progress',
+                        params: {
+                          id: res.data
+                        }
+                      }).then(result=>{
+                        excel.progress = result.data.progress
+                        if(result.data.status == 4){
+                          excel.status = 'exception'
+                          clearInterval(excel.excelTimer)
+                        }
+                        if(result.data.status == 3){
+                          clearInterval(excel.excelTimer)
+                          excel.status = 'success'
+                          excel.file = result.data.history.slice(-2)[0].message
+                        }
+                      })
+                    },500)
+                  })
                 }else{
-                    location.href = buildURL('/eadmin.rest',requestParams)
+                  location.href = buildURL('/eadmin.rest',requestParams)
                 }
             }
             const pageLayout = computed(()=>{
@@ -637,12 +731,22 @@
                 }
                 ctx.emit('update:selection',selectIds.value)
             }
+            function columnFilter(confirm) {
+                loading.value = true
+                confirm()
+            }
+            //列筛选重置
+            function columnFilterReset(field) {
+                if(Array.isArray(field)){
+                    proxyData[props.filterField][field] = []
+                }else{
+                    proxyData[props.filterField][field] = ''
+                }
+            }
             return {
                 isMobile,
                 grid,
                 pageLayout,
-                eadminActionWidth,
-                quickSearchOn,
                 quickSearchText,
                 page,
                 size,
@@ -655,7 +759,7 @@
                 handleCurrentChange,
                 loading,
                 tableData,
-                quickSearch,
+                quickSearchValue,
                 rowSelection,
                 visibleFilter,
                 filterShow,
@@ -664,6 +768,7 @@
                 deleteAll,
                 selectIds,
                 dragTable,
+                tableBox,
                 sortTop,
                 sortBottom,
                 sortInput,
@@ -678,19 +783,18 @@
                 selectRadio,
                 changeSelect,
                 excelVisibleClose,
+                variables,
+                empty,
+                columnFilter,
+                columnFilterReset,
+                columnHeader
             }
         }
     })
 </script>
 
-<style scoped>
-    .searchButton{
-        background:#409eff!important;
-        color: #FFFFFF!important;
-        border-radius:0!important;
-        border-top-right-radius:4px!important;
-        border-bottom-right-radius:4px!important;
-    }
+<style lang="scss" scoped>
+    @import '@/styles/theme.scss';
     .custom{
         background: none !important;
         padding-left: 0 !important;
@@ -729,12 +833,16 @@
     .filterCustom{
         margin-bottom: 10px;
     }
+
     .customEadminAction{
         margin-top: 10px;
-        display: flex;align-items: center;
+        display: flex;
+        align-items: center;
         justify-content: space-between;
     }
     .customEadminAction .el-radio{
         margin-right: 0;
     }
+
+
 </style>

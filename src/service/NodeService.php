@@ -8,6 +8,9 @@
 
 namespace Eadmin\service;
 
+use Eadmin\Admin;
+use Eadmin\PlugServiceProvider;
+use Symfony\Component\Finder\Finder;
 use think\route\Resource;
 use Eadmin\Service;
 
@@ -31,7 +34,7 @@ class NodeService
             return app()->cache->get($this->cacheKey);
         } else {
             $files = $this->getControllerFiles();
-            $data  = $this->parse($files);
+            $data = $this->parse($files);
             app()->cache->set($this->cacheKey, $data);
 
             return $data;
@@ -53,9 +56,10 @@ class NodeService
     /**
      * 解析注释
      * @param mixed $doc 注释
+     * @param PlugServiceProvider $plug 插件
      * @return array|bool
      */
-    protected function parseDocComment($doc)
+    protected function parseDocComment($doc,$plug = null)
     {
         if (preg_match('#^/\*\*(.*)\*/#s', $doc, $comment) === false) {
             return false;
@@ -68,10 +72,10 @@ class NodeService
             return false;
         }
         $commentsLine = end($lines);
-
         if (count($commentsLine) > 0) {
-            $auth  = false;
+            $auth = false;
             $login = false;
+            $authPlug = true;
             $title = array_shift($commentsLine);
             foreach ($commentsLine as $line) {
                 $line = trim($line);
@@ -79,12 +83,17 @@ class NodeService
                     $auth = true;
                 } elseif (preg_match('/@login\s*true/i', $line) && $login == false) {
                     $login = true;
+                } elseif (preg_match('/@plugConfig\s(.*)/i', $line,$arr) && isset($arr[1]) && $plug) {
+                    $field = trim($arr[1]);
+                    if(!$plug::config($field)){
+                        $authPlug = false;
+                    }
                 }
             }
         } else {
             return false;
         }
-        return [trim($title), $auth, $login];
+        return [trim($title), $auth, $login,$authPlug];
 
     }
 
@@ -95,76 +104,80 @@ class NodeService
      */
     protected function parse($files)
     {
-        $data  = [];
+        $data = [];
         $rules = app()->route->getRuleList();
         foreach ($files as $key => $item) {
-            $file       = $item['file'];
+            $file = $item['file'];
             $controller = str_replace('.php', '', basename($file));
             if (!empty($item['module'])) {
                 $moduleName = $item['module'];
             }
             $namespace = $item['namespace'];
-            $class     = new \ReflectionClass($namespace);
-            $res       = $this->parseDocComment($class->getDocComment());
-            if ($res === false) {
+            $plug = $item['plug'] ?? false;
+            $class = new \ReflectionClass($namespace);
+            $classDoc = $this->parseDocComment($class->getDocComment(),$plug);
+            if ($classDoc === false) {
                 $title = $controller;
             } else {
-                $title = array_shift($res);
+                $title = array_shift($classDoc);
+                if(empty($title)){
+                    $title = $controller;
+                }
             }
             $this->treeArr[$moduleName]['children'][$key] = [
-                'label'    => $title,
-                'id'       => md5($namespace),
+                'label' => $title,
+                'id' => md5($namespace),
                 'children' => []
             ];
-            $methodNode                                   = [];
+            $methodNode = [];
             foreach ($class->getMethods() as $method) {
                 $doc = $method->getDocComment();
-                $res = $this->parseDocComment($doc);
+                $res = $this->parseDocComment($doc,$plug);
                 if ($method->class == $namespace && $method->isPublic()) {
-                    $action              = $method->getName();
+                    $action = $method->getName();
                     $reflectionNamedType = $method->getReturnType();
                     if ($res !== false) {
-                        list($title, $auth, $login) = $res;
+                        list($title, $auth, $login,$authPlug) = $res;
                         $nodeData = [
-                            'label'    => $title,
-                            'class'    => $namespace,
-                            'action'   => $action,
-                            'is_auth'  => $auth,
+                            'label' => $title,
+                            'class' => $namespace,
+                            'action' => $action,
+                            'is_auth' => $auth,
                             'is_login' => $login,
-                            'method'   => 'get',
-                            'id'       => md5($namespace . $action . 'get'),
+                            'method' => 'get',
+                            'id' => md5($namespace . $action . 'get'),
                         ];
-                        if ($auth) {
+                        if ($auth && $authPlug) {
                             if ($reflectionNamedType && $reflectionNamedType->getName() == 'Eadmin\form\Form') {
-                                $label              = $nodeData['label'];
-                                $nodeData['label']  = $label . '添加';
+                                $label = $nodeData['label'];
+                                $nodeData['label'] = $label . '添加';
                                 $nodeData['method'] = 'post';
-                                $nodeData['id']     = md5($namespace . $action . $nodeData['method']);
-                                $data[]             = $nodeData;
-                                $methodNode[]       = $nodeData;
-                                $nodeData['label']  = $label . '修改';
+                                $nodeData['id'] = md5($namespace . $action . $nodeData['method']);
+                                $data[] = $nodeData;
+                                $methodNode[] = $nodeData;
+                                $nodeData['label'] = $label . '修改';
                                 $nodeData['method'] = 'put';
-                                $nodeData['id']     = md5($namespace . $action . $nodeData['method']);
-                                $data[]             = $nodeData;
-                                $methodNode[]       = $nodeData;
+                                $nodeData['id'] = md5($namespace . $action . $nodeData['method']);
+                                $data[] = $nodeData;
+                                $methodNode[] = $nodeData;
                             } else {
-                                $data[]       = $nodeData;
+                                $data[] = $nodeData;
                                 $methodNode[] = $nodeData;
                                 if ($reflectionNamedType && $reflectionNamedType->getName() == 'Eadmin\grid\Grid') {
-                                    $nodeData['label']  = '删除权限';
+                                    $nodeData['label'] = '删除';
                                     $nodeData['method'] = 'delete';
-                                    $nodeData['id']     = md5($namespace . $action . $nodeData['method']);
-                                    $data[]             = $nodeData;
-                                    $methodNode[]       = $nodeData;
+                                    $nodeData['id'] = md5($namespace . $action . $nodeData['method']);
+                                    $data[] = $nodeData;
+                                    $methodNode[] = $nodeData;
                                 }
-
                             }
                         }
                     }
                 }
             }
             $this->treeArr[$moduleName]['children'][$key]['children'] = $methodNode;
-            if (count($this->treeArr[$moduleName]['children'][$key]['children']) == 0) {
+            list($auth, $login,$authPlug) = $classDoc;
+            if (count($this->treeArr[$moduleName]['children'][$key]['children']) == 0 || !$authPlug) {
                 unset($this->treeArr[$moduleName]['children'][$key]);
             }
             $this->treeArr[$moduleName]['children'] = array_values($this->treeArr[$moduleName]['children']);
@@ -178,7 +191,7 @@ class NodeService
      */
     protected function getControllerFiles()
     {
-        $appPath         = app()->getBasePath();
+        $appPath = app()->getBasePath();
         $controllerFiles = [];
         //扫描所有模块
         $modules = [];
@@ -189,65 +202,60 @@ class NodeService
         }
         foreach (glob(dirname(__DIR__) . '/controller/' . '*.php') as $file) {
             if (is_file($file)) {
-                $controller        = str_replace('.php', '', basename($file));
-                $namespace         = "Eadmin\\controller\\$controller";
+                $controller = str_replace('.php', '', basename($file));
+                $namespace = "Eadmin\\controller\\$controller";
                 $controllerFiles[] = [
                     'namespace' => $namespace,
-                    'module'    => 'admin',
-                    'file'      => $file,
+                    'module' => 'admin',
+                    'file' => $file,
                 ];
             }
         }
-
+        $finder = new Finder();
         //扫描存在配置权限模块控制器下所有文件
         foreach ($modules as $module) {
             $moduleName = basename($module);
             //权限模块
             $authModuleName = config('admin.authModule');
             if (isset($authModuleName[$moduleName])) {
-                $authModuleTitle            = $authModuleName[$moduleName];
+                $authModuleTitle = $authModuleName[$moduleName];
                 $this->treeArr[$moduleName] = [
                     'label' => $authModuleTitle,
-                    'id'    => md5($moduleName),
+                    'id' => md5($moduleName),
                 ];
+                foreach ($finder->files()->in($module . '/controller')->name('*.php') as $file) {
+                    $controller = str_replace('.php', '', $file->getRealPath());
+                    $controller = strstr($controller,'controller'.DIRECTORY_SEPARATOR);
+                    $controller = explode(DIRECTORY_SEPARATOR,$controller);
+                    $controller = implode('\\',$controller);
+                    $namespace = "app\\$moduleName\\$controller";
+                    $controllerFiles[] = [
+                        'namespace' => $namespace,
+                        'module' => $moduleName,
+                        'file' => $file,
+                    ];
+                }
+            }
+        }
+        $serviceProviders = Admin::plug()->getServiceProviders();
+        foreach ($serviceProviders as $serviceProvider) {
+            if ($serviceProvider instanceof PlugServiceProvider) {
+                $reflectionClass = new \ReflectionClass($serviceProvider);
+                $module = dirname($reflectionClass->getFileName());
                 foreach (glob($module . '/controller/' . '*.php') as $file) {
                     if (is_file($file)) {
-                        $controller        = str_replace('.php', '', basename($file));
-                        $namespace         = "app\\$moduleName\\controller\\$controller";
+                        $controller = str_replace('.php', '', basename($file));
+                        $namespace = $serviceProvider->getNamespace() . "controller\\$controller";
                         $controllerFiles[] = [
                             'namespace' => $namespace,
-                            'module'    => $moduleName,
-                            'file'      => $file,
+                            'module' => '',
+                            'file' => $file,
+                            'plug'=>$serviceProvider
                         ];
                     }
                 }
             }
         }
-
-        $rules  = app()->route->getGroup()->getRules();
-        $loader = PlugService::instance()->loader();
-        $psr    = $loader->getPrefixesPsr4();
-        foreach ($rules as $key => $rule) {
-            if (isset($rule[1]) && $rule[1] instanceof Resource) {
-                $resource[] = $rule[1];
-                $route      = $rule[1]->getRoute();
-                $arr        = explode('\\', $route);
-                $namespace  = array_shift($arr) . '\\';
-                if (isset($psr[$namespace])) {
-                    $file     = array_shift($psr[$namespace]);
-                    $filePath = str_replace([$namespace, '\\'], ['', '/'], $route);
-                    $file     .= $filePath . '.php';
-                    if (is_file($file)) {
-                        $controllerFiles[] = [
-                            'namespace' => $route,
-                            'module'    => '',
-                            'file'      => $file,
-                        ];
-                    }
-                }
-            }
-        }
-
         return $controllerFiles;
     }
 }

@@ -46,6 +46,7 @@ EOT
     {
         $seed = $input->getOption('seed');
         $this->path = $input->getArgument('path');
+        $this->seeds = null;
         // run the seed(ers)
         $start = microtime(true);
         $this->seed($seed);

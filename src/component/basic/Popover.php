@@ -23,6 +23,7 @@ class Popover extends \Eadmin\component\Component
 
     public function __construct($content)
     {
+        parent::__construct();
         $this->content(Html::create($content), 'reference');
     }
 

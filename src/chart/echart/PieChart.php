@@ -43,12 +43,15 @@ class PieChart extends EchartAbstract
         $this->legend = array_merge($this->legend, $names);
         $length       = count($this->series);
         $start        = $length * 30 + 10;
-        $end          = ($length + 1) * 20;
+        $end          = $start + ($length + 1) * 20;
+        if($end > 100){
+            $end = 100;
+        }
         $this->series[] = array_merge([
             'name'              => $name,
             'type'              => 'pie',
             'roseType'          => 'radius',
-            'radius'            => [$start, $start + $end],
+            'radius'            => [$start, $end],
             'center'            => ['50%', '38%'],
             'animationEasing'   => 'cubicInOut',
             'animationDuration' => 2600,

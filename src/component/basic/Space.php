@@ -25,6 +25,7 @@ class Space extends Component
     protected $name = 'ElSpace';
     public function __construct($content)
     {
+        parent::__construct();
         if (!empty($content) || is_numeric($content)) {
             $this->content($content);
         }

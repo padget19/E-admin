@@ -1,9 +1,9 @@
 <template>
     <el-dropdown placement="bottom" trigger="click" @visible-change="noticeShow" :style="['line-height: 1',noticeCount > 0 ? 'margin-right: 5px':'']">
         <div class="right-menu-item hover-effect">
-            <i class="el-icon-bell hover-effect" style="font-size: 16px" v-if="noticeCount === 0"/>
+            <i class="el-icon-bell hover-effect" style="font-size: 16px;color: #ffffff" v-if="noticeCount === 0"/>
             <el-badge :value="noticeCount" :max="99" type="danger" v-else>
-                <i class="el-icon-bell hover-effect" style="font-size: 16px"/>
+                <i class="el-icon-bell hover-effect" style="font-size: 16px;color: #ffffff"/>
             </el-badge>
         </div>
         <template #dropdown>
@@ -17,9 +17,9 @@
                             </div>
                             <el-tooltip :open-delay="1500" effect="dark" :content="item.content" placement="top-start">
                                 <div class="content">
-                                    <div v-if="item.is_read == 1" class="title">{{ item.content }}</div>
+                                    <div v-if="item.is_read == 1" class="title" v-html="item.content"></div>
                                     <el-badge v-else is-dot type="danger">
-                                        <div class="title">{{ item.content }}</div>
+                                        <div class="title" v-html="item.content"></div>
                                     </el-badge>
                                     <div class="time">
                                         {{ item.create_time }}
@@ -178,7 +178,7 @@
 </script>
 
 <style lang="scss" scoped>
-    @import '../styles/element-variables.scss';
+    @import '../styles/light';
     .right-menu-item {
 
         display: inline-block;
@@ -191,7 +191,7 @@
             transition: background .3s;
 
             &:hover {
-                background-color: #f9f9f9;
+                background-color: hsla(0,0%,100%,.1);
             }
         }
     }

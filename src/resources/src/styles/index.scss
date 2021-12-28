@@ -1,7 +1,9 @@
+@import './base.scss';
 @import './variables.scss';
 @import './element-ui.scss';
 @import './sidebar.scss';
 @import './highlight.scss';
+
 html {
   height: 100%;
 }
@@ -10,7 +12,9 @@ body {
   height: 100%;
   background: #e9ecf3;
   -moz-osx-font-smoothing: grayscale;
-  font-family: Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,SimSun,sans-serif;
+  -webkit-font-smoothing: antialiased;
+  //font-family: Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,SimSun,sans-serif;
+  font-family: Nunito,Montserrat,system-ui,BlinkMacSystemFont,-apple-system,sans-serif;
   padding: 0;
   margin: 0;
 }
@@ -49,15 +53,13 @@ body {
 body *::-webkit-scrollbar {width:9px; height:9px;} /*定义滚动条高宽及背景 高宽分别对应横竖滚动条的尺寸*/
 body *::-webkit-scrollbar-thumb {
   border-radius: 5px;
-  border-style: dashed;
+  border-style: solid;
   background-color: rgba(157, 165, 183, 0.4);
   border-color: transparent;
   border-width: 2px;
   background-clip: padding-box;
 }
-
 body *::-webkit-scrollbar-thumb:hover {
-  box-shadow: 5px 5px 5px rgba(157, 165, 183,.5);
   background: rgba(157, 165, 183,.5);
 }
 .scrollbarHide::-webkit-scrollbar{display: none}
@@ -65,13 +67,45 @@ body *::-webkit-scrollbar-thumb:hover {
 .xgplayer-skin-default .xgplayer-start {
   z-index:1!important;
 }
-
 .ant-table-thead > tr > th{
   padding:10px 10px;
-  background: linear-gradient(to top, rgb(250, 250, 250), rgb(255, 255, 255)); color: rgb(96, 98, 102); border-top: 1px solid rgb(237, 237, 237);
+  background: linear-gradient(to top, rgb(250, 250, 250), rgb(255, 255, 255)); color: rgb(96, 98, 102);
+  border-top: 1px solid rgb(237, 237, 237);
+}
+.ant-table-bordered .ant-table-thead > tr > th{
+  border-top: none;
 }
 .ant-table-tbody > tr > td{
   padding:8px;
 }
-
-
+.eadmin_table .ant-table-tbody{
+  font-size:12px;
+}
+.eadmin-editable-cell{
+  position: relative;
+  min-height: 30px;
+}
+.eadmin-editable-cell .editable-cell-icon{
+  position: absolute;
+  right: 0;
+  width: 20px;
+  cursor: pointer;
+}
+.eadmin-editable-cell .editable-cell-icon {
+  margin-top: 4px;
+  display: none;
+}
+.eadmin-editable-cell:hover .editable-cell-icon{
+  display: inline-block;
+}
+.eadmin-editable-cell .editable-cell-icon:hover {
+  margin-top: 4px;
+  color: $--color-primary;
+}
+.eadmin-horizontal{
+  display: flex;
+  flex-direction: column;
+}
+.eadmin-horizontal .el-radio{
+  line-height: 2
+}

@@ -1,3 +1,4 @@
+// @ts-ignore
 import {onMounted,onBeforeUnmount} from "vue";
 import {action} from '@/store'
 const _isMobile = function(){

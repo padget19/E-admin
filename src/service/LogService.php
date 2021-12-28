@@ -208,6 +208,9 @@ class LogService extends Service
                 return 0;
             }
         } else {
+            if(!$this->pageOffset){
+                return false;
+            }
             if ($this->pageOffset['start'] == 0) {
                 return false;
             }
