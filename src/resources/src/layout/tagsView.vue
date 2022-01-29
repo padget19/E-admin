@@ -11,16 +11,16 @@
             <i class="el-icon-arrow-right tabMove" v-if="isScroll" @click="rightMove"></i>
         </div>
         <div class="breadcrumb">
-            <el-tooltip placement="bottom" content="返回上一页">
+            <el-tooltip placement="bottom" :content="trans('back')">
                 <i class="el-icon-back back" @click="back"></i>
             </el-tooltip>
             <el-dropdown @command="handleCommand">
                 <i class="el-icon-close back"></i>
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <el-dropdown-item icon="el-icon-close" command="other">关闭其他</el-dropdown-item>
-                        <el-dropdown-item icon="el-icon-back" command="left">关闭左侧</el-dropdown-item>
-                        <el-dropdown-item icon="el-icon-right" command="right">关闭右侧</el-dropdown-item>
+                        <el-dropdown-item icon="el-icon-close" command="other">{{trans('tagview.closeOther')}}</el-dropdown-item>
+                        <el-dropdown-item icon="el-icon-back" command="left">{{trans('tagview.closeLeft')}}</el-dropdown-item>
+                        <el-dropdown-item icon="el-icon-right" command="right">{{trans('tagview.closeRight')}}</el-dropdown-item>
                     </el-dropdown-menu>
                 </template>
             </el-dropdown>
@@ -32,6 +32,7 @@
     import {useRoute,useRouter} from 'vue-router'
     import {defineComponent, inject,ref,onMounted,onBeforeUnmount,watch} from 'vue'
     import {store,action} from '@/store'
+    import {trans} from '@/utils'
     import breadcrumb from '@/components/breadcrumb.vue'
     export default defineComponent({
         name: "TagsView.vue",
@@ -108,6 +109,7 @@
                 }
             }
             return {
+                trans,
                 handleCommand,
                 back,
                 close,
@@ -132,8 +134,8 @@
         align-items: center;
         height: 40px;
         background: #FFFFFF;
-        border-top: 1px solid #f6f6f6;
-        box-shadow: rgba(0, 21, 41, 0.08) 0px 1px 4px;
+        border-top: 1px solid #F0F0F0;
+        box-shadow: rgba(0, 21, 41, 0.08) 0px 2px 4px;
     }
     .tagsView .tabs{
         display: flex;

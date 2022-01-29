@@ -76,9 +76,10 @@ class FormSteps extends Steps
      * @param \Closure $closure
      * @param string $title 完成步骤标题
      */
-    public function finish(\Closure $closure, $title = '完成')
+    public function finish(\Closure $closure, $title = null)
     {
-        $this->step($title);
+        
+        $this->step($title ?? admin_trans('admin.complete'));
         $this->finish = $closure;
     }
 

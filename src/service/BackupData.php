@@ -36,7 +36,7 @@ class BackupData extends Service
             mkdir($this->backupPath(), 0755);
         }
         try {
-            $dump = new IMysqldump\Mysqldump('mysql:host=' . config('database.connections.mysql.hostname') . ';dbname=' . config('database.connections.mysql.database'), config('database.connections.mysql.username'), config('database.connections.mysql.password'), $dumpSettings);
+			$dump = new IMysqldump\Mysqldump('mysql:host=' . config('database.connections.mysql.hostname') . ';port=' . config('database.connections.mysql.hostport') . ';dbname=' . config('database.connections.mysql.database'), config('database.connections.mysql.username'), config('database.connections.mysql.password'), $dumpSettings);
             $dump->start($this->backupPath() . date('YmdHis') . '.sql');
         } catch (\Exception $e) {
             return $e->getMessage();

@@ -20,26 +20,27 @@
                  </template>
             </a-table-column>
         </a-table>
-        <el-button size="mini" type='primary' plain @click="add" v-if="!disabled && (limit == 0 || limit > value.length)">新增</el-button>
+        <el-button size="mini" type='primary' plain @click="add" v-if="!disabled && (limit == 0 || limit > value.length)">{{ trans('manyItem.add') }}</el-button>
     </el-form-item>
     <div v-else>
         <div v-for="(item,index) in value">
             <slot :row="item" :$index="index" :prop-field="field" :validator="$attrs.validator"></slot>
             <el-form-item v-if="!disabled">
-                <el-button size="mini" v-if="value.length - 1 == index && (limit == 0 || limit > value.length)" type='primary' plain @click="add">新增</el-button>
-                <el-button size="mini" type='danger' v-show='value.length > 0' @click="remove(index)">移除</el-button>
-                <el-button size="mini" @click="handleUp(index)" v-show='value.length > 1 && index > 0'>上移</el-button>
-                <el-button size="mini" v-show='value.length > 1 && index < value.length-1' @click="handleDown(index)">下移</el-button>
+                <el-button size="mini" v-if="value.length - 1 == index && (limit == 0 || limit > value.length)" type='primary' plain @click="add">{{ trans('manyItem.add') }}</el-button>
+                <el-button size="mini" type='danger' v-show='value.length > 0' @click="remove(index)">{{ trans('manyItem.remove') }}</el-button>
+                <el-button size="mini" @click="handleUp(index)" v-show='value.length > 1 && index > 0'>{{ trans('manyItem.up') }}</el-button>
+                <el-button size="mini" v-show='value.length > 1 && index < value.length-1' @click="handleDown(index)">{{ trans('manyItem.down') }}</el-button>
             </el-form-item>
             <el-divider></el-divider>
         </div>
         <el-form-item v-if="value.length == 0 && !disabled">
-            <el-button size="mini" type='primary' plain @click="add">新增</el-button>
+            <el-button size="mini" type='primary' plain @click="add">{{ trans('manyItem.add') }}</el-button>
         </el-form-item>
     </div>
 </template>
 
 <script>
+    import {trans} from '@/utils'
     import {defineComponent,reactive,watch,ref} from "vue";
     export default defineComponent({
         name: "EadminManyItem",
@@ -95,6 +96,7 @@
             };
             }
             return {
+                trans,
                 value,
                 add,
                 remove,

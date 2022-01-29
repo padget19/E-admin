@@ -34,7 +34,6 @@ use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\F;
  */
 class Admin extends Controller
 {
-    protected $title = '系统用户';
 
     /**
      * 系统用户列表
@@ -45,63 +44,62 @@ class Admin extends Controller
     public function index(): Grid
     {
         return Grid::create(new AdminModel(), function (Grid $grid) {
-            $grid->title($this->title);
-            $grid->userInfo('avatar', 'nickname', '头像');
-            $grid->column('username', '用户账号')->display(function ($val, $data) {
+            $grid->title(admin_trans('admin.system_user'));
+            $grid->userInfo('avatar', 'nickname', admin_trans('admin.fields.avatar'));
+            $grid->column('username', admin_trans('admin.fields.username'))->display(function ($val, $data) {
                 if ($data['id'] == config('admin.admin_auth_id')) {
                     return Html::create()
                         ->content($val)
                         ->content(
-                            Badge::create()->value('超级管理员')->type('primary')->attr('style', ['marginTop' => '5px'])
+                            Badge::create()->value(admin_trans('admin.super_admin'))->type('primary')->attr('style', ['marginTop' => '5px'])
                         );
                 } else {
                     return $val;
                 }
             });
-            $grid->column('phone', '手机号');
-            $grid->column('mail', '邮箱');
-            $grid->column('status', '账号状态')->switch();
-            $grid->column('create_time', '创建时间');
-
+            $grid->column('phone',  admin_trans('admin.fields.phone'));
+            $grid->column('mail',  admin_trans('admin.fields.mail'));
+            $grid->column('status', admin_trans('admin.fields.status'))->switch();
+            $grid->column('create_time', admin_trans('admin.create_time'));
             $grid->actions(function (Actions $action, $data) {
+                $dropdown = $action->dropdown();
                 if ($data['id'] == config('admin.admin_auth_id') || $data['id'] == \Eadmin\Admin::id()) {
                     $action->hideDel();
+                }else{
+                    $dropdown
+                        ->prepend(admin_trans('auth.data_grant'),'fa fa-database')
+                        ->dialog()
+                        ->width('50%')
+                        ->title(admin_trans('auth.data_grant'))
+                        ->form(url('auth/dataAuth',['id'=>$data['id'],'type'=>2]));
                 }
-
-                $action->hideDetail();
-                $button = Button::create('重置密码')
-                    ->type('primary')
-                    ->size('small')
-                    ->icon('el-icon-key')
-                    ->plain()
+                $dropdown->prepend(admin_trans('admin.reset_password'),'el-icon-key')
                     ->dialog()
-                    ->title('重置密码')
+                    ->title(admin_trans('admin.reset_password'))
                     ->form($this->resetPassword($data['id']));
-                $action->prepend($button);
-
             });
             //删掉前回调
             $grid->deling(function ($ids) {
                 if (is_array($ids) && in_array(config('admin.admin_auth_id'), $ids)) {
-                    $this->errorCode(999, '超级管理员不可以删除噢!');
+                    $this->errorCode(999, admin_trans('admin.super_admin_delete'));
                 }
             });
             //更新前回调
             $grid->updateing(function ($ids, $data) {
                 if (in_array(config('admin.admin_auth_id'), $ids)) {
                     if (isset($data['status']) && $data['status'] == 0) {
-                        $this->errorCode(999, '超级管理员不可以禁用噢!');
+                        $this->errorCode(999, admin_trans('admin.super_admin_disabled'));
                     }
                 }
             });
             $grid->filter(function (Filter $filter) {
-                $filter->like('username', '用户账号');
-                $filter->like('phone', '手机号');
-                $filter->eq('status', '账号状态')->select([
-                    1 => '正常',
-                    0 => '已禁用'
+                $filter->like('username', admin_trans('admin.fields.username'));
+                $filter->like('phone',  admin_trans('admin.fields.phone'));
+                $filter->eq('status', admin_trans('admin.fields.status'))->select([
+                    1 => admin_trans('admin.normal'),
+                    0 => admin_trans('admin.disable')
                 ]);
-                $filter->dateRange('create_time', '创建时间');
+                $filter->dateRange('create_time', admin_trans('admin.create_time'));
             });
             $grid->quickSearch();
             $grid->setForm($this->form())->dialog();
@@ -119,15 +117,15 @@ class Admin extends Controller
     {
         return Form::create(new AdminModel(), function (Form $form) {
             $form->edit(\Eadmin\Admin::id());
-            $form->password('old_password', '旧密码')->required();
-            $form->password('new_password', '新密码')->rule([
-                'confirm' => '输入密码不一致',
-                'min:5' => '密码最少5位数'
+            $form->password('old_password', admin_trans('admin.old_password'))->required();
+            $form->password('new_password', admin_trans('admin.new_password'))->rule([
+                'confirm' => admin_trans('admin.password_confim_validate'),
+                'min:5' => admin_trans('admin.password_min_number')
             ])->required();
-            $form->password('new_password_confirm', '确认密码')->required();
+            $form->password('new_password_confirm', admin_trans('admin.confim_password'))->required();
             $form->saving(function ($data) use ($form) {
                 if (!password_verify($data['old_password'], $form->getData('password'))) {
-                    admin_error_message('旧密码错误');
+                    admin_error_message(admin_trans('admin.old_password_error'));
                 }
                 $data['password'] = $data['new_password'];
                 return $data;
@@ -146,11 +144,11 @@ class Admin extends Controller
     {
         return Form::create(new AdminModel(), function (Form $form) use ($id) {
             $form->edit($id);
-            $form->password('new_password', '新密码')->required()->rule([
-                'confirm' => '输入密码不一致',
-                'min:5' => '密码最少5位数'
+            $form->password('new_password', admin_trans('admin.new_password'))->required()->rule([
+                'confirm' => admin_trans('admin.password_confim_validate'),
+                'min:5' => admin_trans('admin.password_min_number')
             ]);
-            $form->password('new_password_confirm', '确认密码')->required();
+            $form->password('new_password_confirm', admin_trans('admin.confim_password'))->required();
             $form->saving(function ($data) {
                 $data['password'] = $data['new_password'];
                 return $data;
@@ -166,30 +164,35 @@ class Admin extends Controller
     public function form(): Form
     {
         return Form::create(new AdminModel(), function (Form $form) {
-            $userInput = $form->text('username', '用户账号')->rule([
-                'chsDash' => '用户账号只能是汉字、字母、数字和下划线_及破折号-',
-                'unique:system_user' => '用户名存在重复'
+            $userInput = $form->text('username', admin_trans('admin.fields.username'))->rule([
+                'chsDash' => admin_trans('admin.username_validate'),
+                'unique:system_user' => admin_trans('admin.username_exist')
             ])->required();
             if ($form->isEdit()) {
                 $userInput->disabled();
             }
-            $form->text('nickname', '用户昵称')->rule([
-                'chsAlphaNum' => '用户昵称只能是汉字、字母和数字',
+            $form->text('nickname', admin_trans('admin.fields.nickname'))->rule([
+                'chsAlphaNum' => admin_trans('admin.nickname_validate'),
             ])->required();
-            $form->image('avatar', '用户头像')->required();
+            $form->image('avatar', admin_trans('admin.fields.avatar'))->required();
             if (!$form->isEdit()) {
-                $form->password('password', '密码')->rule(['min:5' => '密码最少5位数'])->default(123456)->help('初始化密码123456,建议密码包含大小写字母、数字、符号')->required();
+                $form->password('password', admin_trans('admin.fields.password'))->rule(['min:5' => admin_trans('admin.password_min_number')])->default(123456)->help('初始化密码123456,建议密码包含大小写字母、数字、符号')->required();
             }
-            $form->mobile('phone', '手机号')
+            $form->mobile('phone', admin_trans('admin.fields.phone'))
                 ->rule([
-                    'unique:' . config('admin.system_user_table') => '手机号已存在'
+                    'unique:' . config('admin.system_user_table') => admin_trans('admin.phone_exist')
                 ]);
-            $form->text('mail', '邮箱')->rule([
-                'email' => '请输入正确的邮箱',
+            $form->text('mail', admin_trans('admin.fields.mail'))->rule([
+                'email' => admin_trans('admin.please_email'),
             ]);
             if ($form->getData('id') != config('admin.admin_auth_id')) {
-                $auths = SystemAuth::where('status', 1)->column('name', 'id');
-                $form->checkbox('roles', '访问权限')->options($auths, true);
+                $auths = SystemAuth::where('status', 1)->select()->toArray();
+                $auths = \Eadmin\Admin::tree($auths);
+                $form->tree('roles','访问权限')
+                    ->data($auths)
+                    ->showCheckbox()
+                    ->defaultExpandAll()
+                    ->props(['children' => 'children', 'label' => 'name']);
             }
         });
     }
@@ -207,9 +210,13 @@ class Admin extends Controller
         $data['webName'] = sysconf('web_name');
         $data['topMenu'] = config('admin.topMenu', true);
         $data['tagMenu'] = config('admin.tagMenu', true);
+        $data['theme'] = config('admin.theme.skin');
+        $data['lang'] = config('admin.lang');
+        $data['lang']['cookie_var'] = config('lang.cookie_var');
+        $data['lang']['element'] = admin_trans('element-plus.element');
         $data['dropdownMenu'] = [
-            DropdownItem::create(Dialog::create('个人信息')->title('个人信息')->form($this->editInfo())->appendToBody(true)),
-            DropdownItem::create(Dialog::create('修改密码')->title('修改密码')->form($this->updatePassword())->appendToBody(true)),
+            DropdownItem::create(Dialog::create(admin_trans('admin.my_info'))->title(admin_trans('admin.my_info'))->form($this->editInfo())->appendToBody(true)),
+            DropdownItem::create(Dialog::create(admin_trans('admin.update_password'))->title(admin_trans('admin.update_password'))->form($this->updatePassword())->appendToBody(true)),
         ];
         $this->successCode($data);
     }
@@ -223,20 +230,20 @@ class Admin extends Controller
     {
         return Form::create(new AdminModel(), function (Form $form) {
             $form->edit(\Eadmin\Admin::id());
-            $form->text('username', '用户名')->rule([
-                'chsDash' => '用户名只能是汉字、字母、数字和下划线_及破折号-'
+            $form->text('username', admin_trans('admin.fields.username'))->rule([
+                'chsDash' => admin_trans('admin.username_validate')
             ])->disabled();
-            $form->text('nickname', '用户昵称')->rule([
-                'chsAlphaNum' => '用户昵称只能是汉字、字母和数字',
+            $form->text('nickname',  admin_trans('admin.fields.nickname'))->rule([
+                'chsAlphaNum' => admin_trans('admin.nickname_validate'),
             ])->required();
-            $form->image('avatar', '用户头像')->default($this->request->domain() . '/static/img/headimg.png')->size(80, 80);
-            $form->text('phone', '手机号')
+            $form->image('avatar', admin_trans('admin.fields.avatar'))->default($this->request->domain() . '/static/img/headimg.png')->size(80, 80);
+            $form->text('phone', admin_trans('admin.fields.phone'))
                 ->rule([
-                    'mobile' => '请输入正确的手机号',
-                    'unique:' . config('admin.system_user_table') => '手机号已存在'
+                    'mobile' => admin_trans('admin.please_phone'),
+                    'unique:' . config('admin.system_user_table') => admin_trans('admin.phone_exist')
                 ]);
-            $form->text('mail', '邮箱')->rule([
-                'email' => '请输入正确的邮箱',
+            $form->text('mail', admin_trans('admin.fields.mail'))->rule([
+                'email' => admin_trans('admin.please_email'),
             ]);
         });
     }

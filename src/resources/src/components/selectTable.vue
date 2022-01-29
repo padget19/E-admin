@@ -15,10 +15,10 @@
                     :selection-type="multiple ? 'checkbox':'radio'"></render>
             <template #footer>
                 <div :class="multiple && selection.length > 0 ? 'footer':''">
-                    <div v-if="multiple && selection.length > 0">已选中: {{selection.length}}</div>
+                    <div v-if="multiple && selection.length > 0">{{ trans('selectTable.selected') }}: {{selection.length}}</div>
                     <div>
-                        <el-button type="primary" @click="submit">确认</el-button>
-                        <el-button @click="visible = false">取消</el-button>
+                        <el-button type="primary" @click="submit">{{ trans('selectTable.confirm') }}</el-button>
+                        <el-button @click="visible = false">{{ trans('selectTable.cancel') }}</el-button>
                     </div>
                 </div>
             </template>
@@ -27,10 +27,9 @@
 </template>
 
 <script>
+    import {trans} from '@/utils'
     import {defineComponent, ref, watch} from "vue";
     import {useHttp} from '@/hooks'
-
-
     export default defineComponent({
         name: "EadminSelectTable",
         props: {
@@ -121,6 +120,7 @@
                 select.value.blur()
             }
             return {
+                trans,
                 selectLoading,
                 loading,
                 submit,

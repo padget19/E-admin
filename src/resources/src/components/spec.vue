@@ -5,20 +5,20 @@
     <el-table :data="specs" border size="mini" v-if="specGroup" v-show="!disabled" style="margin-bottom: 5px" :row-class-name="tableRowClassName" @cell-mouse-leave="cellMouseLeave" @cell-mouse-enter="cellMouseEnter">
         <el-table-column
                 prop="name"
-                label="可选规格">
+                :label="trans('spec.specOption')">
         </el-table-column>
         <el-table-column
-                label="规格内容">
+                :label="trans('spec.content')">
             <template #default="scope">
                 <div class="specValue">
                     <el-checkbox-group v-model="scope.row.selected">
                         <el-checkbox v-for="item in scope.row.spec" :label="item"></el-checkbox>
                     </el-checkbox-group>
                     <div class="action" v-if="hoverIndex === scope.$index">
-                        <el-tooltip content="上移">
+                        <el-tooltip :content="trans('spec.up')">
                             <i class="el-icon-caret-top" @click="handleUp(selectSpec,scope.$index)"></i>
                         </el-tooltip>
-                        <el-tooltip content="下移">
+                        <el-tooltip :content="trans('spec.down')">
                             <i class="el-icon-caret-bottom" @click="handleDown(selectSpec,scope.$index)"></i>
                         </el-tooltip>
                     </div>
@@ -27,7 +27,7 @@
         </el-table-column>
     </el-table>
     <a-table row-key="group" :data-source="tableData" v-if="tableData.length > 0" size="small" bordered :pagination="false" :scroll="{x:'max-content'}">
-        <a-table-column title="规格" data-index="eadminSpecGroup">
+        <a-table-column :title="trans('spec.spec')" data-index="eadminSpecGroup">
             <template #default="{ record }">
                 <el-breadcrumb separator="|">
                     <el-breadcrumb-item v-for="item in record.group">
@@ -42,13 +42,14 @@
                 <template #title>
                     {{column.title}} <i class="el-icon-edit-outline" style="cursor: pointer" v-if="column.component.content.default[0].name != 'EadminDisplay' && !column.component.content.default[0].attribute.disabled" @click="dialogs[index].dialog = true"></i>
                     <el-dialog
-                            title="批量修改"
+                            :title="trans('spec.batch')"
                             v-model="dialogs[index].dialog"
                             width="30%">
                         <render :data="column.component.content.default[0]" v-model="dialogs[index].value"></render>
                         <template #footer>
-                            <el-button size="small" @click="dialogs[index].dialog = false">取 消</el-button>
-                            <el-button size="small" type="primary" @click="()=>{batch(index,column.prop,dialogs[index].value)}">保 存</el-button>
+                            <el-button size="small" @click="dialogs[index].dialog = false">{{trans('spec.cancel')}}</el-button>
+                            <el-button size="small" type="primary" @click="()=>{batch(index,column.prop,dialogs[index].value)}">
+                              {{ trans('spec.save') }}</el-button>
                         </template>
                     </el-dialog>
                 </template>
@@ -65,7 +66,7 @@
 
 <script>
     import {defineComponent, reactive, toRefs, computed, watch,watchEffect,toRaw} from "vue";
-    import {findTree} from "@/utils";
+    import {findTree,trans} from "@/utils";
 
     export default defineComponent({
         name: "EadminSpec",
@@ -265,6 +266,7 @@
                 handleDown,
                 selectHandel,
                 specs,
+                trans,
                 ...toRefs(state)
             }
         }

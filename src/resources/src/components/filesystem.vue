@@ -5,33 +5,34 @@
         <el-row style="display: flex;align-items: center;justify-content: space-between">
           <el-col :md="16" :xs="24" >
             <el-button-group style="display: flex">
-              <div v-if="!uploadFinder">
-                <el-button icon="el-icon-back" size="mini" @click="back"></el-button>
-                <div class="breadcrumb">
-                  <el-breadcrumb separator-class="el-icon-arrow-right" style="display: flex;white-space: nowrap;">
-                    <el-breadcrumb-item @click="changePath(initPath)" style="cursor: pointer">根目录</el-breadcrumb-item>
-                    <el-breadcrumb-item v-for="item in breadcrumb" @click="changePath(item.path)"
-                                        :style="item.path ? 'cursor: pointer':''">{{item.name}}
-                    </el-breadcrumb-item>
-                  </el-breadcrumb>
-                </div>
-              </div>
+<!--              <div v-if="!uploadFinder">-->
+<!--                <el-button icon="el-icon-back" size="mini" @click="back"></el-button>-->
+<!--                <div class="breadcrumb">-->
+<!--                  <el-breadcrumb separator-class="el-icon-arrow-right" style="display: flex;white-space: nowrap;">-->
+<!--                    <el-breadcrumb-item @click="changePath(initPath)" style="cursor: pointer">根目录</el-breadcrumb-item>-->
+<!--                    <el-breadcrumb-item v-for="item in breadcrumb" @click="changePath(item.path)"-->
+<!--                                        :style="item.path ? 'cursor: pointer':''">{{item.name}}-->
+<!--                    </el-breadcrumb-item>-->
+<!--                  </el-breadcrumb>-->
+<!--                </div>-->
+<!--              </div>-->
               <el-button icon="el-icon-refresh" size="mini" @click="loading = true"></el-button>
               <render :data="upload" :drop-element="filesystem"  :params="finderParam"  :on-progress="uploadProgress" @success="uploadSuccess"></render>
-              <EadminSelect size="mini" :disabled="selectIds.length == 0" v-if="uploadFinder" placeholder="文件移动至" :options="finerCate" tree clearable v-model="selectCate"></EadminSelect>
-              <el-button  size="mini" @click="mkdir" v-if="!uploadFinder">新建文件夹</el-button>
-              <el-button  size="mini" type="danger" v-if="selectIds.length > 0" @click="delSelect">删除选中</el-button>
+              <EadminSelect size="mini" :disabled="selectIds.length == 0" v-if="uploadFinder" :placeholder="trans('filesystem.move')" :options="finerCate" tree clearable v-model="selectCate"></EadminSelect>
+              <el-button  size="mini" @click="mkdir" v-if="!uploadFinder">{{ trans('filesystem.mkdir') }}</el-button>
+              <el-button  size="mini" type="danger" v-if="selectIds.length > 0" @click="delSelect">{{ trans('filesystem.delSelected') }}</el-button>
             </el-button-group>
           </el-col>
           <el-col :md="8" :xs="24" style="display: flex;">
             <!--快捷搜索-->
             <el-input class="hidden-md-and-down" v-model="quickSearch" clearable prefix-icon="el-icon-search"
-                      size="mini" style="margin-right: 10px;flex: 1" placeholder="请输入关键字" @change="loading = true" ></el-input>
-            <el-button class="hidden-md-and-down" type="primary" size="mini" icon="el-icon-search" @click="loading = true">搜索</el-button>
-            <el-tooltip v-if="showType === 'grid'" content="列表排序">
+                      size="mini" style="margin-right: 10px;flex: 1" :placeholder="trans('filesystem.searchKey')" @change="loading = true" ></el-input>
+            <el-button class="hidden-md-and-down" type="primary" size="mini" icon="el-icon-search" @click="loading = true">
+              {{ trans('filesystem.search') }}</el-button>
+            <el-tooltip v-if="showType === 'grid'" :content="trans('filesystem.listSort')">
               <el-button icon="el-icon-s-grid"  size="mini" @click="showType='menu'"></el-button>
             </el-tooltip>
-            <el-tooltip v-else content="图标排序">
+            <el-tooltip v-else :content="trans('filesystem.iconSort')">
               <el-button icon="el-icon-menu" size="mini" @click="showType='grid'"></el-button>
             </el-tooltip>
           </el-col>
@@ -39,7 +40,7 @@
         </el-row>
       </template>
       <div>
-        <a-table v-if="showType === 'grid'" :scroll="{y:height?height:'calc(100vh - 320px)'}" :locale="{emptyText:'暂无数据'}"  row-key="id" :pagination="false" :row-selection="rowSelection" :columns="tableColumns" :data-source="tableData" :loading="loading" :custom-row="customRow">
+        <a-table v-if="showType === 'grid'" :scroll="{y:height?height:'calc(100vh - 320px)'}" :locale="{emptyText:trans('filesystem.empty')}"  row-key="id" :pagination="false" :row-selection="rowSelection" :columns="tableColumns" :data-source="tableData" :loading="loading" :custom-row="customRow">
           <template #name="{ text , record , index }">
             <div class="filename" @click="changePath(record.path,record.dir)">
               <el-image :src="record.url" :preview-src-list="[record.url]"
@@ -48,8 +49,7 @@
                   <el-image :src="fileIcon(record.dir ? '.dir':text)"
                             style="width: 32px;height: 32px;margin-right: 10px">
                     <template #error >
-                      <div style="display: flex; align-items: center;"><i class="el-icon-document"
-                                                                          style="font-size: 32px"/></div>
+                      <div style="display: flex; align-items: center;"><i class="el-icon-document" style="font-size: 32px"/></div>
                     </template>
                   </el-image>
                 </template>
@@ -59,9 +59,9 @@
           </template>
           <template #action="{ record }" >
             <div v-show="mouseenterIndex == record.id">
-              <el-button icon="el-icon-folder-opened" size="mini" round v-if="record.dir" @click="rename(record.path)">重命名</el-button>
-              <el-button icon="el-icon-download" size="mini" round v-else @click="link(record.url)">下载</el-button>
-              <el-button icon="el-icon-delete"  type="danger" size="mini" round @click="del(record.id)">删除</el-button>
+              <el-button icon="el-icon-folder-opened" size="mini" round v-if="record.dir" @click="rename(record.path)">{{ trans('filesystem.rename') }}</el-button>
+              <el-button icon="el-icon-download" size="mini" round v-else @click="link(record.url)">{{ trans('filesystem.download') }}</el-button>
+              <el-button icon="el-icon-delete"  type="danger" size="mini" round @click="del(record.id)">{{ trans('filesystem.del') }}</el-button>
             </div>
           </template>
         </a-table>
@@ -94,9 +94,9 @@
               </div>
 
               <div class="tool" v-show="mouseenterIndex == item.id">
-                <el-button icon="el-icon-folder-opened" size="mini" round v-if="item.dir" @click="rename(item.path)">重命名</el-button>
-                <el-button icon="el-icon-download" size="mini" round v-else @click="link(item.url)">下载</el-button>
-                <el-button icon="el-icon-delete"  type="danger" size="mini" round @click="del(item.id)">删除</el-button>
+                <el-button icon="el-icon-folder-opened" size="mini" round v-if="item.dir" @click="rename(item.path)">{{ trans('filesystem.rename') }}</el-button>
+                <el-button icon="el-icon-download" size="mini" round v-else @click="link(item.url)">{{ trans('filesystem.download') }}</el-button>
+                <el-button icon="el-icon-delete"  type="danger" size="mini" round @click="del(item.id)">{{ trans('filesystem.del') }}</el-button>
               </div>
             </el-col>
 
@@ -118,7 +118,7 @@
 
 <script>
     import {computed, defineComponent, reactive, toRefs, onActivated, watch,ref} from "vue";
-    import {deleteArr, fileIcon, unique,link} from '@/utils'
+    import {deleteArr, fileIcon, unique,link,trans} from '@/utils'
     import request from '@/utils/axios'
     import {useHttp} from "@/hooks";
     import {ElMessageBox,ElLoading} from 'element-plus';
@@ -512,7 +512,8 @@
                 fileIcon,
                 ...toRefs(state),
                 filesystem,
-                finerCate
+                finerCate,
+                trans
             }
         }
     })

@@ -69,6 +69,7 @@ abstract class Component implements \JsonSerializable
     {
         $this->bind('eadmin_title', $title);
         return $this;
+
     }
 
     /**
@@ -195,7 +196,7 @@ abstract class Component implements \JsonSerializable
      * @param string|array $argument 参数(可选)
      * @return $this
      */
-    public function directive($name, $value='', $argument = '')
+    public function directive($name, $value = '', $argument = '')
     {
         $this->directive[] = ['name' => $name, 'argument' => $argument, 'value' => $value];
         return $this;
@@ -225,7 +226,7 @@ abstract class Component implements \JsonSerializable
         return $this;
     }
 
-    public function event($name, array $value)
+    public function event($name, array $value = [])
     {
         $name = ucfirst($name);
         if (isset($this->event[$name])) {
@@ -288,7 +289,7 @@ abstract class Component implements \JsonSerializable
                 $content = Admin::dispatch($content);
 
             }
-            if ($content instanceof Form && ($this instanceof Dialog || $this instanceof Drawer)) {
+            if ($content instanceof Form && $content->attr('saveCloseDialog') && ($this instanceof Dialog || $this instanceof Drawer)) {
                 $field = $this->bindAttr('modelValue');
                 $content->eventSuccess([$field => false]);
             }

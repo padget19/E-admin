@@ -10,6 +10,8 @@ namespace Eadmin\model;
 
 
 use app\model\User;
+use Eadmin\Admin;
+use think\db\Query;
 use think\facade\Request;
 use think\Model;
 
@@ -22,8 +24,8 @@ class BaseModel extends Model
 {
     protected $autoWriteTimestamp = 'datetime';
     protected $globalScope = ['base'];
-
-    public function scopeBase($query)
+    protected $dataAuth = [];
+    public function scopeBase(Query  $query)
     {
         $id          = $query->getPk();
         $tableFields = $query->getTableFields();
@@ -33,9 +35,8 @@ class BaseModel extends Model
         } else {
             $query->order("{$id} desc");
         }
-       
+        Admin::auth()->checkDataAuth($this->dataAuth,$query);
     }
-
     //分页条件
     public function scopePages($query, $page = 1, $size = 10)
     {

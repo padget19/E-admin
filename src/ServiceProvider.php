@@ -16,15 +16,21 @@ use Eadmin\controller\FileSystem;
 use Eadmin\controller\ResourceController;
 use Eadmin\controller\Queue;
 use Eadmin\facade\Schedule;
+use Eadmin\middleware\DataAuth;
 use Eadmin\middleware\Response;
 use Eadmin\model\SystemFile;
+use Eadmin\service\AuthService;
 use Eadmin\service\BackupData;
 use Eadmin\service\MenuService;
 use Eadmin\service\QueueService;
+use Eadmin\support\Translator;
 use Symfony\Component\Finder\Finder;
 use think\facade\Console;
 use think\facade\Db;
 
+use think\facade\Event;
+use think\facade\Lang;
+use think\middleware\LoadLangPack;
 use think\route\Resource;
 use think\Service;
 use Eadmin\controller\Backup;
@@ -50,16 +56,55 @@ class ServiceProvider extends Service
         Admin::plug()->register();
         //视图路由
         Admin::registerRoute();
+
         //权限中间件
         $this->app->middleware->route(\Eadmin\middleware\Permission::class);
+        $this->app->middleware->route(LoadLangPack::class);
+        //加载语言
+        $this->language();
+    }
+    protected function finderIn($path,$name = [],$type='directories'){
 
+        $data = [];
+        $paths = (array)$path;
+        foreach ($paths as $path){
+            if(is_dir($path)){
+                $finder= new Finder();
+                foreach ($finder->$type()->in($path)->depth(0)->name($name) as $dir) {
+                    $data[]= $dir->getRealPath();
+                }
+            }
+        }
+        return $data;
+    }
+    //加载语言
+    protected function language(){
+
+        $dirs = $this->finderIn(__DIR__,['lang']);
+        $ranges = $this->finderIn($dirs);
+
+        $dirs = $this->finderIn($this->app->getBasePath());
+
+        $dirs = $this->finderIn($dirs,['lang']);
+
+        $ranges = array_merge($ranges,$this->finderIn($dirs));
+
+        foreach ($ranges as $range){
+            $name = basename($range);
+            $files = $this->finderIn($range,['*.php','*.json'],'files');
+            foreach ($files as $file){
+                $filename = pathinfo($file)['filename'];
+                $this->app->lang->load($file,$name);
+                $this->app->lang->load($file,$filename.'-'.$name);
+            }
+        }
     }
     //检测静态文件版本发布
     protected function publishVersion(){
         $file = __DIR__.'/../.env';
         $systemEnv = Env::load($file);
         $envFile = app()->getRootPath().'public/eadmin/.env';
-        if(is_file($file)){
+        if(is_file($envFile)){
             $env =  Env::load($envFile);
             //版本检测
             if($systemEnv->get('VERSION') != $env->get('VERSION')){
@@ -111,6 +156,8 @@ class ServiceProvider extends Service
             'admin.menu'         => MenuService::class,
             'admin.message'      => Message::class,
             'admin.notification' => Notification::class,
+            'admin.translator' => Translator::class,
+            'admin.auth' => AuthService::class,
         ]);
     }
     protected function crontab(){
@@ -151,6 +198,7 @@ class ServiceProvider extends Service
             'Eadmin\command\Queue',
             'Eadmin\command\Crontab',
         ]);
+
         //定时任务
         $this->crontab();
         //检测静态文件版本发布

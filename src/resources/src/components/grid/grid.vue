@@ -8,7 +8,8 @@
                     <el-input class="hidden-md-and-down" v-model="quickSearchValue" clearable prefix-icon="el-icon-search"
                               size="small" style="margin-right: 10px;flex: 1" :placeholder="quickSearchText" @change="handleFilter"  @keyup.enter="handleFilter">
                     </el-input>
-                   <el-button class="hidden-md-and-down searchButton" type="primary" size="small" @click="handleFilter">搜索</el-button>
+                   <el-button class="hidden-md-and-down searchButton" type="primary" size="small" @click="handleFilter">
+                     {{ trans('grid.search') }}</el-button>
                 </el-col>
                 <el-col :md="quickSearch ? 15:20" style="margin-bottom: 10px">
                     <!--添加-->
@@ -16,28 +17,31 @@
                     <!--导出-->
                     <el-dropdown trigger="click" v-if="export">
                         <el-button type="primary" size="small" icon="el-icon-download">
-                            导出<i class="el-icon-arrow-down el-icon--right"></i>
+                          {{ trans('grid.export') }}<i class="el-icon-arrow-down el-icon--right"></i>
                         </el-button>
                         <template #dropdown>
                             <el-dropdown-menu>
-                                <el-dropdown-item @click.native="exportData('page')">导出当前页</el-dropdown-item>
-                                <el-dropdown-item @click.native="exportData('select')" v-show="selectIds.length > 0">导出选中行</el-dropdown-item>
-                                <el-dropdown-item v-if="!hideExportAll" @click.native="exportData('all')">导出全部</el-dropdown-item>
+                                <el-dropdown-item @click.native="exportData('page')">{{ trans('grid.exportPage') }}</el-dropdown-item>
+                                <el-dropdown-item @click.native="exportData('select')" v-show="selectIds.length > 0">
+                                  {{ trans('grid.exportSelect') }}</el-dropdown-item>
+                                <el-dropdown-item v-if="!hideExportAll" @click.native="exportData('all')">{{ trans('grid.exportAll') }}</el-dropdown-item>
                             </el-dropdown-menu>
                         </template>
                     </el-dropdown>
-                    <el-button plain size="small" icon="el-icon-delete" v-if="((!hideDeleteSelection && !trashed) || (trashed && !hideTrashedDelete)) && selectIds.length > 0" @click="deleteSelect">删除选中</el-button>
-                    <el-button plain size="small" icon="el-icon-help" v-if="!hideTrashedRestore && trashed && selectIds.length > 0" @click="recoverySelect">恢复选中</el-button>
-                    <el-button type="danger" size="small" icon="el-icon-delete" v-if="(!hideDeleteButton && !trashed)|| (trashed && !hideTrashedDelete)" @click="deleteAll()">{{trashed && !hideTrashed?'清空回收站':'清空数据'}}</el-button>
+                    <el-button plain size="small" icon="el-icon-delete" v-if="((!hideDeleteSelection && !trashed) || (trashed && !hideTrashedDelete)) && selectIds.length > 0" @click="deleteSelect">
+                      {{ trans('grid.deleteSelected') }}</el-button>
+                    <el-button plain size="small" icon="el-icon-help" v-if="!hideTrashedRestore && trashed && selectIds.length > 0" @click="recoverySelect">
+                      {{ trans('grid.restoreSelected') }}</el-button>
+                    <el-button type="danger" size="small" icon="el-icon-delete" v-if="(!hideDeleteButton && !trashed)|| (trashed && !hideTrashedDelete)" @click="deleteAll()">{{trashed && !hideTrashed?trans('grid.clearTrash'):trans('grid.clearData')}}</el-button>
 
                     <render v-for="tool in tools" :data="tool" :ids="selectIds" :add-params="{eadmin_ids:selectIds}" :grid-params="params" :slot-props="grid"></render>
                 </el-col>
                 <el-col :md="4" >
                     <div style="float: right;margin-left: 15px">
-                        <el-tooltip placement="top" :content="filterShow?'收起筛选':'展开筛选'"  v-if="filter">
+                        <el-tooltip placement="top" :content="filterShow?trans('grid.collapseFilter'):trans('grid.expandFilter')"  v-if="filter">
                             <el-button size="mini" icon="el-icon-search" circle @click="visibleFilter"></el-button>
                         </el-tooltip>
-                        <el-tooltip placement="top" :content="trashed?'数据列表':'回收站'"  v-if="!hideTrashed">
+                        <el-tooltip placement="top" :content="trashed?trans('grid.dataList'):trans('grid.recycle')"  v-if="!hideTrashed">
                             <el-button :type="trashed?'primary':'info'" size="mini" circle :icon="trashed?'el-icon-s-grid':'el-icon-delete'" @click="trashedHandel"></el-button>
                         </el-tooltip>
                         <!--刷新-->
@@ -94,7 +98,19 @@
                 </el-row>
             </div>
             <!--表格-->
-            <a-table v-else :row-selection="rowSelection" @expand="expandChange" @change="tableChange" :columns="tableColumns" :data-source="tableData"  :expanded-row-keys="expandedRowKeys" :pagination="false" :loading="loading" v-bind="$attrs" row-key="eadmin_id" ref="dragTable" class="eadmin_table">
+            <a-table v-else
+                     :row-selection="rowSelection"
+                     @expand="expandChange"
+                     @change="tableChange"
+                     :columns="tableColumns"
+                     :data-source="tableData"
+                     :expanded-row-keys="expandedRowKeys"
+                     :pagination="false" :loading="loading"
+                     :rowClassName="(record, index) => (index % 2 === 1 && stripe ? 'table-striped' : null)"
+                     v-bind="$attrs"
+                     row-key="eadmin_id"
+                     ref="dragTable"
+                     class="eadmin_table">
                 <template #title v-if="header">
                     <div class="header"><render v-for="item in header" :data="item" :ids="selectIds" :add-params="{eadmin_ids:selectIds}" :grid-params="params"  :slot-props="grid"></render></div>
                 </template>
@@ -107,8 +123,8 @@
                         <div v-if="!filter.attribute.hideAction">
                             <div style="background-color: #DCDFE6;height: 1px;margin: 10px 0"></div>
                             <div style="margin-top: 5px">
-                                <el-button size="mini" type="primary" @click="columnFilter(confirm)">确定</el-button>
-                                <el-button size="mini" @click="columnFilterReset(column.prop)">重置</el-button>
+                                <el-button size="mini" type="primary" @click="columnFilter(confirm)">{{ trans('grid.confirm') }}</el-button>
+                                <el-button size="mini" @click="columnFilterReset(column.prop)">{{ trans('grid.reset') }}</el-button>
                             </div>
                         </div>
                     </div>
@@ -127,9 +143,9 @@
 
                 <template #sortDrag="{ text , record , index }">
                     <div style="display: flex;flex-direction: column">
-                        <el-tooltip  effect="dark" content="置顶" placement="right-start"><i @click="sortTop(index,record)" class="el-icon-caret-top" style="cursor: pointer"></i></el-tooltip>
-                        <el-tooltip effect="dark" content="拖动排序" placement="right-start"><i class="el-icon-rank sortHandel" style="font-weight:bold;cursor: grab"></i></el-tooltip>
-                        <el-tooltip  effect="dark" content="置底" placement="right-start"><i @click="sortBottom(index,record)" class="el-icon-caret-bottom" style="cursor: pointer"></i></el-tooltip>
+                        <el-tooltip  effect="dark" :content="trans('grid.sortTop')" placement="right-start"><i @click="sortTop(index,record)" class="el-icon-caret-top" style="cursor: pointer"></i></el-tooltip>
+                        <el-tooltip effect="dark" :content="trans('grid.sortDrag')" placement="right-start"><i class="el-icon-rank sortHandel" style="font-weight:bold;cursor: grab"></i></el-tooltip>
+                        <el-tooltip  effect="dark" :content="trans('grid.sortBottom')" placement="right-start"><i @click="sortBottom(index,record)" class="el-icon-caret-bottom" style="cursor: pointer"></i></el-tooltip>
                     </div>
                 </template>
                 <template #sortInput="{ text , record , index }">
@@ -151,11 +167,11 @@
                        :current-page="page">
         </el-pagination>
         <!-- 导出excel进度-->
-        <el-dialog title="导出进度" v-model="excel.excelVisible" width="30%" :before-close="excelVisibleClose" :close-on-click-modal="false">
+        <el-dialog :title="trans('grid.exportProgressl')" v-model="excel.excelVisible" width="30%" :before-close="excelVisibleClose" :close-on-click-modal="false">
             <div style="text-align: center">
                 <el-progress type="circle" :percentage="excel.progress" :status="excel.status"></el-progress>
-                <div v-if="excel.status == 'success'">已导出成功，请点击<el-link :href="excel.file" type="primary">下载</el-link></div>
-                <div v-else-if="excel.status == 'exception'" style="color: red">导出失败</div>
+                <div v-if="excel.status == 'success'">{{ trans('grid.exportSuccess') }}<el-link :href="excel.file" type="primary">{{ trans('grid.download') }}</el-link></div>
+                <div v-else-if="excel.status == 'exception'" style="color: red">{{ trans('grid.exportFail') }}</div>
             </div>
         </el-dialog>
     </div>
@@ -167,7 +183,7 @@
     import {useHttp} from '@/hooks'
     import request from '@/utils/axios'
     import {store,action} from '@/store'
-    import {forEach, unique, deleteArr, buildURL, debounce,treeMap,empty,findTree,offsetTop} from '@/utils'
+    import {forEach, unique, deleteArr, buildURL, debounce,treeMap,empty,findTree,offsetTop,trans} from '@/utils'
     import {ElMessageBox,ElMessage} from 'element-plus'
     import Sortable from 'sortablejs'
     import {useRoute} from 'vue-router'
@@ -186,6 +202,7 @@
             sortInput: Boolean,
             tools:[Object,Array],
             hideSelection: Boolean,
+            stripe: Boolean,
             selectionType:{
                 type:String,
                 default:'checkbox'
@@ -249,7 +266,7 @@
                 file:'',
                 status:'',
             })
-            const quickSearchText = ctx.attrs.quickSearchText || '请输入关键字'
+            const quickSearchText = ctx.attrs.quickSearchText || trans('grid.quickSearchText')
             const originColumns = JSON.parse(JSON.stringify(props.columns))
             const columns = ref(props.columns)
             const tableData = ref([])
@@ -586,16 +603,16 @@
             }
             //删除全部
             function deleteAll(){
-                deleteRequest('此操作将删除清空所有数据, 是否继续?',true)
+                deleteRequest(trans('grid.confirmClear'),true)
 
             }
             //删除选中
             function deleteSelect() {
-                deleteRequest('此操作将删除选中数据, 是否继续?',selectIds.value)
+                deleteRequest(trans('grid.confirmClearSelected'),selectIds.value)
             }
             //恢复选中
             function recoverySelect() {
-                ElMessageBox.confirm('此操作将恢复选中数据','是否继续?',{type: 'warning'}).then(()=>{
+                ElMessageBox.confirm(trans('grid.confirmRecoverySelected'),trans('grid.continue'),{type: 'warning'}).then(()=>{
                     request({
                         url: props.loadDataUrl.replace('.rest','/batch.rest'),
                         data: Object.assign({eadmin_ids: selectIds.value},props.params,{delete_time:null}),
@@ -607,7 +624,7 @@
             }
             //删除请求
             function deleteRequest(message,ids) {
-                ElMessageBox.confirm(message,'是否继续?',{type: 'warning'}).then(()=>{
+                ElMessageBox.confirm(message,trans('grid.continue'),{type: 'warning'}).then(()=>{
                     let params = {}
                     if(trashed.value){
                         params.trueDelete = true
@@ -650,7 +667,7 @@
             //导出
             function exportData(type){
                 if(tableData.value.length == 0){
-                    ElMessage.warning('暂无数据')
+                    ElMessage.warning(trans('grid.empty'))
                     return false
                 }
                 let requestParams = {
@@ -744,6 +761,7 @@
                 }
             }
             return {
+                trans,
                 isMobile,
                 grid,
                 pageLayout,
@@ -843,6 +861,7 @@
     .customEadminAction .el-radio{
         margin-right: 0;
     }
-
-
+    /deep/.table-striped td {
+      background-color: #fafafa;
+    }
 </style>

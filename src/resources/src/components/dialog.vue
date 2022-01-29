@@ -63,6 +63,7 @@
                 footerShow:false,
                 action:{},
                 formLoading:false,
+                isEmitSuccess:false,
             })
             if(ctx.attrs.eadmin_popup){
                 props.slotProps.eadmin_popup = ctx.attrs.eadmin_popup
@@ -77,6 +78,7 @@
                 }
             })
             watch(()=>props.modelValue,(value)=>{
+
                if(visible.value && !value){
                    hide()
                }
@@ -94,6 +96,7 @@
             watch(content,value=>{
                 if(value.name == 'EadminForm'){
                     value.attribute.ref = dialogRef
+                    state.isEmitSuccess = value.attribute.saveCloseDialog || false
                     state.action = value.attribute.action
                     if(!value.attribute.action.hide){
                         state.footer = true
@@ -121,8 +124,10 @@
                 }
             })
             function emitSuccess() {
-                hide()
-                ctx.emit('success')
+                if(state.isEmitSuccess){
+                  hide()
+                  ctx.emit('success')
+                }
             }
             return {
                 emitSuccess,

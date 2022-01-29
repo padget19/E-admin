@@ -1,48 +1,50 @@
 <template>
-    <el-dropdown placement="bottom" trigger="click" @visible-change="noticeShow" :style="['line-height: 1',noticeCount > 0 ? 'margin-right: 5px':'']">
+    <div class="eadmin_notice">
+      <el-dropdown placement="bottom" trigger="click" @visible-change="noticeShow" :style="['line-height: 1',noticeCount > 0 ? 'margin-right: 5px':'']">
         <div class="right-menu-item hover-effect">
-            <i class="el-icon-bell hover-effect" style="font-size: 16px;color: #ffffff" v-if="noticeCount === 0"/>
-            <el-badge :value="noticeCount" :max="99" type="danger" v-else>
-                <i class="el-icon-bell hover-effect" style="font-size: 16px;color: #ffffff"/>
-            </el-badge>
+          <i class="el-icon-bell hover-effect"  v-if="noticeCount === 0"/>
+          <el-badge :value="noticeCount" :max="99" type="danger" v-else>
+            <i class="el-icon-bell hover-effect" />
+          </el-badge>
         </div>
         <template #dropdown>
-            <el-dropdown-menu class="user-dropdown" >
-                <div v-infinite-scroll="noticeListsRoll" class="noticeListBox" :infinite-scroll-immediate="true">
-                    <el-dropdown-item v-for="item in list" @click.native="readNotice(item.id,item.target_url)">
-                        <div class="noticeBox">
-                            <el-avatar v-if="item.type == 2" size="medium" :src="item.avatar"/>
-                            <div v-else class="avatar" :style="{background:item.color}">
-                                <i :class="item.avatar" style="margin-right:0px"/>
-                            </div>
-                            <el-tooltip :open-delay="1500" effect="dark" :content="item.content" placement="top-start">
-                                <div class="content">
-                                    <div v-if="item.is_read == 1" class="title" v-html="item.content"></div>
-                                    <el-badge v-else is-dot type="danger">
-                                        <div class="title" v-html="item.content"></div>
-                                    </el-badge>
-                                    <div class="time">
-                                        {{ item.create_time }}
-                                        <el-tag class="tag" :style="{background:item.color,borderColor:item.color}"
-                                                effect="dark">{{ item.title }}
-                                        </el-tag>
-                                    </div>
-                                </div>
-                            </el-tooltip>
-                        </div>
-                    </el-dropdown-item>
+          <el-dropdown-menu class="user-dropdown" >
+            <div v-infinite-scroll="noticeListsRoll" class="noticeListBox" :infinite-scroll-immediate="true">
+              <el-dropdown-item v-for="item in list" @click.native="readNotice(item.id,item.target_url)">
+                <div class="noticeBox">
+                  <el-avatar v-if="item.type == 2" size="medium" :src="item.avatar"/>
+                  <div v-else class="avatar" :style="{background:item.color}">
+                    <i :class="item.avatar" style="margin-right:0px"/>
+                  </div>
+                  <el-tooltip :open-delay="1500" effect="dark" :content="item.content" placement="top-start">
+                    <div class="content">
+                      <div v-if="item.is_read == 1" class="title" v-html="item.content"></div>
+                      <el-badge v-else is-dot type="danger">
+                        <div class="title" v-html="item.content"></div>
+                      </el-badge>
+                      <div class="time">
+                        {{ item.create_time }}
+                        <el-tag class="tag" :style="{background:item.color,borderColor:item.color}"
+                                effect="dark">{{ item.title }}
+                        </el-tag>
+                      </div>
+                    </div>
+                  </el-tooltip>
                 </div>
-                <div class="noticeClear">
-                    <span v-if="list.length == 0">暂无通知</span>
-                    <el-popconfirm v-else icon-color="red" title="清空将无法恢复，确认清空？" @confirm="noticeClear">
-                        <template #reference>
-                            <span>清空通知</span>
-                        </template>
-                    </el-popconfirm>
-                </div>
-            </el-dropdown-menu>
+              </el-dropdown-item>
+            </div>
+            <div class="noticeClear">
+              <span v-if="list.length == 0">{{ trans('notice.empty')}}</span>
+              <el-popconfirm v-else icon-color="red" :title="trans('notice.clearAlert')" @confirm="noticeClear">
+                <template #reference>
+                  <span>{{ trans('notice.clear') }}</span>
+                </template>
+              </el-popconfirm>
+            </div>
+          </el-dropdown-menu>
         </template>
-    </el-dropdown>
+      </el-dropdown>
+    </div>
     <audio id="eadmin_notice_music" controls="controls" style="display:none">
         <source src="../assets/notice.mp3" type="audio/mpeg">
     </audio>
@@ -51,7 +53,7 @@
 <script>
     import {defineComponent, ref} from 'vue'
     import request from '@/utils/axios'
-    import {link} from '@/utils'
+    import {link,trans} from '@/utils'
     import { ElNotification } from 'element-plus'
     export default defineComponent({
         name: "notice",
@@ -166,6 +168,7 @@
                 }
             }
             return {
+                trans,
                 noticeCount,
                 list,
                 readNotice,
@@ -179,6 +182,9 @@
 
 <style lang="scss" scoped>
     @import '../styles/light';
+    .eadmin_notice i {
+      font-size: 16px
+    }
     .right-menu-item {
 
         display: inline-block;

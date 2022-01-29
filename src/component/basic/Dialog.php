@@ -73,7 +73,7 @@ class Dialog extends Field
         $params = Admin::parseUrlQuery($form);
         $form = Admin::dispatch($form);
         if($form->bind('eadmin_title')){
-            $this->title($form->bind('eadmin_title'));
+            $this->title($this->attr('title').$form->bind('eadmin_title'));
         }
         $callMethod = $form->getCallMethod();
         $this->params(array_merge($callMethod,$params));
@@ -97,8 +97,9 @@ class Dialog extends Field
      * @param string $content
      * @return Dialog
      */
-    public function title($content)
+    public function title($content = null)
     {
-        return $this->attr('title', $content);
+        $this->attr('title', $content);
+        return $this;
     }
 }

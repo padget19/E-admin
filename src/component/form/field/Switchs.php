@@ -26,10 +26,7 @@ class Switchs extends Field
     public function __construct($field = null, $value = '')
     {
         parent::__construct($field, $value);
-        $this->state([
-        	[1 => '开启'],
-			[0 => '关闭']
-		]);
+        $this->state(admin_trans('admin.switch'));
     }
 
     /**

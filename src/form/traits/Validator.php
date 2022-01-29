@@ -182,35 +182,15 @@ trait Validator
 	}
 
 	/**
-	 * 验证是否大于某个值
+	 * 验证是否小于某个值
 	 * @param int    $num
 	 * @param string $text 文案，必须带上[字段]
 	 * @return $this
 	 */
-	public function gtRule($num, $text = '[字段]不大于[值]')
+	public function gtRule($num, $text = '[字段]不小于[值]')
 	{
 		$this->formItem->rules([
 			"gt:{$num}" => str_replace([
-				'[字段]',
-				'[值]',
-			], [
-				$this->formItem->attr('label'),
-				$num,
-			], $text),
-		]);
-		return $this;
-	}
-
-	/**
-	 * 验证是否大于等于某个值
-	 * @param int    $num
-	 * @param string $text 文案，必须带上[字段]
-	 * @return $this
-	 */
-	public function egtRule($num, $text = '[字段]不大于等于[值]')
-	{
-		$this->formItem->rules([
-			"egt:{$num}" => str_replace([
 				'[字段]',
 				'[值]',
 			], [
@@ -227,7 +207,27 @@ trait Validator
 	 * @param string $text 文案，必须带上[字段]
 	 * @return $this
 	 */
-	public function eltRule($num, $text = '[字段]不小于等于[值]')
+	public function egtRule($num, $text = '[字段]不小于等于[值]')
+	{
+		$this->formItem->rules([
+			"egt:{$num}" => str_replace([
+				'[字段]',
+				'[值]',
+			], [
+				$this->formItem->attr('label'),
+				$num,
+			], $text),
+		]);
+		return $this;
+	}
+
+	/**
+	 * 验证是否大于等于某个值
+	 * @param int    $num
+	 * @param string $text 文案，必须带上[字段]
+	 * @return $this
+	 */
+	public function eltRule($num, $text = '[字段]不大于等于[值]')
 	{
 		$this->formItem->rules([
 			"elt:{$num}" => str_replace([
@@ -242,12 +242,12 @@ trait Validator
 	}
 
 	/**
-	 * 验证是否小于某个值
+	 * 验证是否大于某个值
 	 * @param int    $num
 	 * @param string $text 文案，必须带上[字段]
 	 * @return $this
 	 */
-	public function ltRule($num, $text = '[字段]不小于[值]')
+	public function ltRule($num, $text = '[字段]不大于[值]')
 	{
 		$this->formItem->rules([
 			"lt:{$num}" => str_replace([
@@ -416,7 +416,7 @@ trait Validator
 	 */
 	public function idCardRule($text = '[字段]不是有效的身份证')
 	{
-		$this->formItem->rules(['id_card' => str_replace('[字段]', $this->formItem->attr('label'), $text)]);
+		$this->formItem->rules(['idCard' => str_replace('[字段]', $this->formItem->attr('label'), $text)]);
 		return $this;
 	}
 

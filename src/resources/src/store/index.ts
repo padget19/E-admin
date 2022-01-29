@@ -1,7 +1,8 @@
 // @ts-ignore
 import {reactive} from "vue";
 import request from '@/utils/axios'
-import {findTree, appendCss} from '@/utils'
+// @ts-ignore
+import {findTree, appendCss,setLang} from '@/utils'
 export const store = Symbol()
 // 使用 reactive 函数完成响应式转换
 const states = reactive({
@@ -48,12 +49,13 @@ const states = reactive({
     //表格grid激活刷新
     gridActivatedRefresh:true,
     gridFirst:true,
+    lang:{},
 });
 export const state = states
 //操作方法
 const action = {
     //切换主题
-    changeTheme(){
+    changeTheme(theme){
         if(state.theme == 'light'){
             state.theme = ''
             window.document.documentElement.removeAttribute('data-theme')
@@ -216,6 +218,16 @@ const action = {
                 if (info) {
                     states.component = null
                     states.info = info
+                    if(res.data.lang){
+                        states.lang = res.data.lang
+                        // @ts-ignore
+                        setLang(states.lang)
+                    }
+                    if(res.data.theme){
+                        states.theme = res.data.theme + '-theme'
+                    }else{
+                        states.theme = 'light-theme'
+                    }
                     states.info.webLogo = res.data.webLogo
                     states.info.webName = res.data.webName
                     states.info.dropdownMenu = res.data.dropdownMenu

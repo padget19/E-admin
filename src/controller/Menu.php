@@ -46,18 +46,18 @@ class Menu extends Controller
     {
         return Grid::create(new SystemMenu(),function (Grid $grid){
             $grid->treeTable();
-            $grid->title('系统菜单管理');
-            $grid->column('name', '菜单名称')->display(function ($val, $data) {
+            $grid->title(admin_trans('menu.title'));
+            $grid->column('name', admin_trans('menu.fields.name'))->display(function ($val, $data) {
                 return "<i class='{$data['icon']}'></i> " . $val;
             });
-            $grid->column('url', '菜单链接')->display(function ($val) {
+            $grid->column('url',  admin_trans('menu.fields.url'))->display(function ($val) {
                 return ' ' . $val;
             });
-            $grid->column('status', '状态')->switch();
-            $grid->column('admin_visible', '超级管理员状态')->switch([[1 => '显示'], [0 => '隐藏']]);
+            $grid->column('status', admin_trans('menu.fields.status'))->switch();
+            $grid->column('admin_visible', admin_trans('menu.fields.super_status'))->switch(admin_trans('menu.options.admin_visible'));
             $grid->actions(function (Actions $action, $data) {
                 $action->prepend(
-                    Button::create('添加菜单')
+                    Button::create(admin_trans('menu.add'))
                         ->plain()
                         ->sizeSmall()
                         ->typePrimary()
@@ -83,13 +83,13 @@ class Menu extends Controller
     {
         return Form::create(new SystemMenu(),function (Form $form) use($pid){
             $menus = Admin::menu()->listOptions();
-            $form->select('pid', '上级菜单')->default($pid)
-                ->options([0 => '顶级菜单'] + array_column($menus, 'label', 'id'))
+            $form->select('pid', admin_trans('menu.fields.pid'))->default($pid)
+                ->options([0 => admin_trans('menu.fields.top')] + array_column($menus, 'label', 'id'))
                 ->required();
-            $form->text('name', '菜单名称')->required();
-            $form->text('url', '菜单链接');
-            $form->icon('icon', '菜单图标');
-            $form->number('sort', '排序')->default(SystemMenu::where('pid',$pid)->max('sort')+1);
+            $form->text('name', admin_trans('menu.fields.name'))->required();
+            $form->text('url', admin_trans('menu.fields.url'));
+            $form->icon('icon', admin_trans('menu.fields.icon'));
+            $form->number('sort', admin_trans('menu.fields.sort'))->default(SystemMenu::where('pid',$pid)->max('sort')+1);
         });
     }
 }

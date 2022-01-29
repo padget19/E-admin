@@ -19,7 +19,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 2,
                     'pid'    => 0,
-                    'name'   => '系统管理',
+                    'name'   => 'system_manage',
                     'icon'   => '',
                     'url'    => '#',
                     'sort'   => 1,
@@ -30,7 +30,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 3,
                     'pid'    => 4,
-                    'name'   => '系统菜单管理',
+                    'name'   => 'system_menu_manage',
                     'icon'   => 'el-icon-menu',
                     'url'    => 'admin/menu',
                     'sort'   => 2,
@@ -41,7 +41,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 4,
                     'pid'    => 2,
-                    'name'   => '系统配置',
+                    'name'   => 'system_config',
                     'icon'   => 'el-icon-s-tools',
                     'url'    => '',
                     'sort'   => 7,
@@ -52,7 +52,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 5,
                     'pid'    => 12,
-                    'name'   => '系统用户管理',
+                    'name'   => 'system_user_manage',
                     'icon'   => 'el-icon-user',
                     'url'    => 'admin/admin',
                     'sort'   => 4,
@@ -63,7 +63,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 7,
                     'pid'    => 12,
-                    'name'   => '访问权限管理',
+                    'name'   => 'access_auth_manage',
                     'icon'   => 'el-icon-lock',
                     'url'    => 'admin/auth',
                     'sort'   => 6,
@@ -74,7 +74,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 11,
                     'pid'    => 4,
-                    'name'   => '系统参数配置',
+                    'name'   => 'system_param_config',
                     'icon'   => 'el-icon-setting',
                     'url'    => 'admin/system/config',
                     'sort'   => 3,
@@ -85,7 +85,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 12,
                     'pid'    => 2,
-                    'name'   => '权限管理',
+                    'name'   => 'auth_manage',
                     'icon'   => 'el-icon-user-solid',
                     'url'    => '',
                     'sort'   => 5,
@@ -96,7 +96,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 1014,
                     'pid'    => 4,
-                    'name'   => '数据库备份',
+                    'name'   => 'backup',
                     'icon'   => 'fa fa-stack-exchange',
                     'url'    => 'admin/backup',
                     'sort'   => 0,
@@ -107,7 +107,7 @@ class systemMenuSeeder extends Seeder
                 array(
                     'id'     => 1084,
                     'pid'    => 0,
-                    'name'   => '总览',
+                    'name'   => 'index',
                     'icon'   => '',
                     'url'    => 'admin/index/dashboard',
                     'sort'   => 0,

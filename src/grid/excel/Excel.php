@@ -170,7 +170,7 @@ class Excel extends AbstractExporter
                 $filename = $this->save($this->fileName);
             }
             $queue->progress($filename);
-            NoticeService::instance()->pushIcon(Admin::id(),'导出下载',  '【下载文件】'.$this->fileName, 'el-icon-message','',request()->get('eadmin_domain').'/'.$filename);
+            NoticeService::instance()->pushIcon(Admin::id(),admin_trans('admin.export_download'),  '【'.admin_trans('admin.下载文件').'】'.$this->fileName, 'el-icon-message','',request()->get('eadmin_domain').'/'.$filename);
         }
     }
 

@@ -1,5 +1,6 @@
 <template>
-    <el-checkbox v-if="onCheckAll" :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
+    <el-checkbox v-if="onCheckAll" :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">
+      {{ trans('el.checkbox.all') }}</el-checkbox>
     <el-divider v-if="onCheckAll"></el-divider>
     <el-checkbox-group v-bind="$attrs" v-model="value" @change="handleCheckedCitiesChange" :class="horizontal?'horizontal':''">
         <slot></slot>
@@ -7,6 +8,7 @@
 </template>
 
 <script>
+    import {trans} from '@/utils'
     import {defineComponent, ref, watch} from "vue";
     export default defineComponent({
         name: "EadminCheckboxGroup",
@@ -46,6 +48,7 @@
             }
 
             return {
+                trans,
                 value,
                 isIndeterminate,
                 checkAll,

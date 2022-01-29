@@ -513,14 +513,14 @@ class Column extends Component
      *                            [0 => '关闭'],
      *                            ];
      */
-    public function switch($switchArr = [[1 => '开启'], [0 => '关闭']])
+    public function switch($switchArr = null)
     {
         return $this->display(function ($val, $data) use ($switchArr) {
 
             $params = $this->grid->getCallMethod();
             $params['eadmin_ids'] = [$data[$this->grid->drive()->getPk()]];
             return Switchs::create(null, $val)
-                ->state($switchArr)
+                ->state($switchArr ?? admin_trans('admin.switch'))
                 ->url('/eadmin/batch.rest')
                 ->field($this->prop)
                 ->params($params);

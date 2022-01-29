@@ -49,7 +49,20 @@ return [
     'tagMenu'=> true,
     //主题
     'theme'=>[
+        //主题皮肤
+        //light primary
+        'skin'=>'light',
         //主题色
-        'color'=>'#409EFF'
+        'color'=>'#409EFF',
+    ],
+    //多语言设置
+    'lang'=>[
+        //开启多语言
+        'enable'=>false,
+        //支持语言列表
+        'list'=>[
+            'zh-cn'=>'中文',
+            'en'=>'English',
+        ]
     ]
 ];

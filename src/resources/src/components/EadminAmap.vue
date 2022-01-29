@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-input v-model="mapAddress">
-      <template #append><el-button icon="el-icon-map-location" @click="drawer = true">地图</el-button></template>
+      <template #append><el-button icon="el-icon-map-location" @click="drawer = true">{{ trans('amap.map') }}</el-button></template>
     </el-input>
     <el-drawer
       custom-class="el-drawers"
@@ -16,18 +16,19 @@
       <div ref="container" style="width: 100%;height: 100%" />
       <div style="position: absolute;left: 80px;top: 10px">
         <el-card :body-style="{ padding: '10px'}">
-          <el-input id="tipinput" v-model="searchText" placeholder="请输入关键字" size="mini" prefix-icon="el-icon-search" />
+          <el-input id="tipinput" v-model="searchText" :placeholder="trans('amap.placeholder')" size="mini" prefix-icon="el-icon-search" />
         </el-card>
       </div>
       <div style="position: absolute;right: 10px;bottom: 10px">
         <el-card :body-style="{ padding: '10px',}">
-          <div class="info"><b>当前选择地址: </b>{{ mapAddress }}</div>
+          <div class="info"><b>{{ trans('amap.select') }}: </b>{{ mapAddress }}</div>
         </el-card>
       </div>
     </el-drawer>
   </div>
 </template>
 <script>
+import {trans} from '@/utils'
 import {defineComponent, ref,watch,onMounted} from "vue";
 export default defineComponent({
   name: 'EadminAmap',
@@ -175,7 +176,8 @@ export default defineComponent({
       searchText,
       drawer,
       mapAddress,
-      container
+      container,
+      trans
     }
   },
 })

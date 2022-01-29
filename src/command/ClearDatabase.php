@@ -2,7 +2,7 @@
 
 namespace Eadmin\command;
 
-use app\common\service\BackupData;
+use Eadmin\service\BackupData;
 
 use think\console\Command;
 use think\console\Input;
@@ -61,22 +61,28 @@ class ClearDatabase extends Command
             if ($backRes) {
                 //清空
                 if ($this->output->confirm($this->input, 'Confirm to clear all data? [y]/n')) {
-                    foreach ($clearTableSqls as $clearTableSql){
-                        Db::execute($clearTableSql);
-                    }
+					// 临时关闭外键约束
+					Db::execute('SET foreign_key_checks = 0');
+					foreach ($clearTableSqls as $clearTableSql){
+						Db::execute($clearTableSql);
+					}
+					// 临时开启外键约束
+					Db::execute('SET foreign_key_checks = 1');
                     $output->writeln("<info>tables all clear successfully!</info>");
                 }
             }
-
         } else {
             $tables = array_column($tables, $mark);
             if (in_array($table, $tables)) {
                 $clearTableSqls[] = "truncate table {$table}";
                 if ($this->output->confirm($this->input, "Confirm to clear {$table} data? [y]/n")) {
-                    //清空
-                    foreach ($clearTableSqls as $clearTableSql){
-                        Db::execute($clearTableSql);
-                    }
+                	// 临时关闭外键约束
+					Db::execute('SET foreign_key_checks = 0');
+					foreach ($clearTableSqls as $clearTableSql){
+						Db::execute($clearTableSql);
+					}
+					// 临时开启外键约束
+					Db::execute('SET foreign_key_checks = 1');
                     $output->writeln("<info>{$table} delete successfully!</info>");
                 }
             } else {

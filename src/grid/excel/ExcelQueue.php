@@ -19,6 +19,7 @@ class ExcelQueue extends Queue
         unset($data['eadmin_queue']);
         $data['eadmin_queue_export'] = true;
         request()->withGet($data);
+		request()->setRoute([]);
         $class    = request()->get('eadmin_class');
         $action   = request()->get('eadmin_function');
         $instance = app($class);

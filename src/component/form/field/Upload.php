@@ -137,7 +137,7 @@ class Upload extends Field
             $uploadButton->finder(false)
                 ->attr('foreverShow', true)
                 ->content(
-                    Button::create('上传')
+                    Button::create(admin_trans('admin.upload'))
                         ->icon('el-icon-upload')
                         ->sizeMini()
                 )

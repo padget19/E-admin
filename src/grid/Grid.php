@@ -36,10 +36,12 @@ use think\Model;
  * 表格
  * Class Grid
  * @package Eadmin\grid
- * @method $this fontSize(int $size)	表格字体大小
- * @method $this size(string $size)	表格大小 default | middle | small
+ * @method $this fontSize(int $size)    表格字体大小
+ * @method $this size(string $size)    表格大小 default | middle | small
  * @method $this tableLayout(string $value) auto / fixed
- * @method $this scroll(array $height) { x: number | true, y: number }
+ * @method $this scroll(array $height) {
+x: number | true, y: number
+}
  * @method $this bordered(bool $bool = true) 是否展示外边框和列边框
  * @method $this quickSearch(bool $bool = true) 快捷搜索
  * @method $this quickSearchText(string $string) 快捷提示文本内容
@@ -55,8 +57,9 @@ use think\Model;
  * @method $this queueExport(bool $bool = true) 是否启动队列导出
  * @method $this expandFilter(bool $bool = true) 展开筛选
  * @method $this defaultExpandAllRows(bool $bool = true) 是否默认展开所有行
- * @method $this static(bool $bool) 静态表格
+ * @method $this static (bool $bool) 静态表格
  * @method $this expandRowByClick(bool $bool = true) 通过点击行来展开子行
+ * @method $this stripe(bool $bool = true) 斑马纹表格
  * @method $this showHeader(bool $bool = true) 是否显示表头
  * @method $this loadDataUrl(string $value) 设置加载数据url
  * @method $this params(array $value) 加载数据附加参数
@@ -106,6 +109,7 @@ class Grid extends Component
     protected $customClosure = null;
 
     protected $get = [];
+
     public function __construct($data)
     {
         if ($data instanceof Model) {
@@ -123,24 +127,27 @@ class Grid extends Component
         $this->actionColumn = new Actions($this);
 
         $this->bindAttValue('modelValue', false, true);
-        $this->bindAttValue('addParams',[]);
+        $this->bindAttValue('addParams', []);
         $this->attr('eadmin_grid_param', $this->bindAttr('addParams'));
-        $this->attr('key',Str::random(30, 3));
+        $this->attr('key', Str::random(30, 3));
         $this->attr('eadmin_grid', $this->bindAttr('modelValue'));
         $this->scroll(['x' => 'max-content']);
-        $this->attr('locale', ['emptyText' => '暂无数据']);
+        $this->attr('locale', ['emptyText' => admin_trans('admin.empty')]);
         $this->loadDataUrl('eadmin.rest');
         $this->parseCallMethod();
-        $this->bind('eadmin_description', '列表');
+        $this->bind('eadmin_description', admin_trans('admin.list'));
         $this->get = request()->get();
         parent::__construct();
     }
-    public static function create($data,\Closure $closure){
-        $self  = new self($data);
-        $self->parseCallMethod(true,2);
+
+    public static function create($data, \Closure $closure)
+    {
+        $self = new self($data);
+        $self->parseCallMethod(true, 2);
         $self->setExec($closure);
         return $self;
     }
+
     /**
      * 设置标题
      * @param string $title
@@ -150,18 +157,20 @@ class Grid extends Component
     {
         return $this->bind('eadmin_title', $title);
     }
+
     /**
      * 头部
      * @param $header
      */
-    public function header($header){
-        if(is_string($header)){
-            $header = explode('',$header);
-        }elseif ($header instanceof Component){
+    public function header($header)
+    {
+        if (is_string($header)) {
+            $header = explode('', $header);
+        } elseif ($header instanceof Component) {
             $header = [$header];
         }
         foreach ($header as &$item) {
-            if(!($item instanceof Component)){
+            if (!($item instanceof Component)) {
                 $item = Html::create($item);
             }
         }
@@ -169,16 +178,19 @@ class Grid extends Component
         //头部
         $this->attr('header', $header);
     }
+
     /**
      * 表格模式
      */
-    public function tableMode(){
+    public function tableMode()
+    {
         $this->hideTools();
         $this->hideAction();
         $this->hidePage();
         $this->hideSelection();
         $this->static();
     }
+
     /**
      * 展开行
      * @param \Closure $closure
@@ -198,17 +210,20 @@ class Grid extends Component
      * @param string $label 标签
      * @return Column
      */
-    public function userInfo($avatar = 'headimg', $nickname = 'nickname', $label = '会员信息')
+    public function userInfo($avatar = 'headimg', $nickname = 'nickname', $label = null)
     {
+        if (is_null($label)) {
+            $label = admin_trans('admin.user_info');
+        }
         $column = $this->column($nickname, $label);
         return $column->display(function ($val, $data) use ($column, $avatar) {
-            $avatarValue = Arr::get($data,$avatar);
+            $avatarValue = Arr::get($data, $avatar);
             $image = Image::create()
                 ->fit('cover')
                 ->attr('style', ['width' => '50px', 'height' => '50px', "borderRadius" => '50%'])
                 ->previewSrcList([$avatarValue])->src($avatarValue);
             return Html::create()->content($image)->content("<br>{$val}");
-        })->align('center')->export(function ($val){
+        })->align('center')->export(function ($val) {
             return $val;
         });
     }
@@ -281,30 +296,31 @@ class Grid extends Component
     //更新前回调
     public function updateing(\Closure $closure)
     {
-        Event::listen(Updateing::class,function ($params) use($closure){
-            call_user_func_array($closure,$params);
+        Event::listen(Updateing::class, function ($params) use ($closure) {
+            call_user_func_array($closure, $params);
         });
     }
 
     //删除前回调
     public function deling(\Closure $closure)
     {
-        Event::listen(Deling::class,function ($id) use($closure){
+        Event::listen(Deling::class, function ($id) use ($closure) {
             $trueDelete = Request::delete('trueDelete');
-            $closure($id,$trueDelete);
+            $closure($id, $trueDelete);
         });
     }
-	/**
-	 * 删除
-	 * @param int $id 删除的id
-	 * @return bool|int
-	 */
-	public function destroy($id)
-	{
-		$this->exec();
-        Event::until(Deling::class,$id);
-		return $this->drive->destroy($id);
-	}
+
+    /**
+     * 删除
+     * @param int $id 删除的id
+     * @return bool|int
+     */
+    public function destroy($id)
+    {
+        $this->exec();
+        Event::until(Deling::class, $id);
+        return $this->drive->destroy($id);
+    }
 
     /**
      * 更新
@@ -314,8 +330,8 @@ class Grid extends Component
      */
     public function update($ids, $data)
     {
-		$this->exec();
-        Event::until(Updateing::class,[$ids, $data]);
+        $this->exec();
+        Event::until(Updateing::class, [$ids, $data]);
         return $this->drive->update($ids, $data);
     }
 
@@ -335,10 +351,10 @@ class Grid extends Component
      * @param string $field 排序字段
      * @param string $label 标题
      */
-    public function sortDrag($field = 'sort', $label = '排序')
+    public function sortDrag($field = 'sort', $label = null)
     {
         $this->drive->sortField($field);
-        $column = $this->column($field, $label)
+        $column = $this->column($field, $label ?? admin_trans('admin.sort'))
             ->attr('slots', ['title' => $field, 'customRender' => 'sortDrag'])
             ->width(50)->align('center');
         return $column;
@@ -350,10 +366,10 @@ class Grid extends Component
      * @param string $label 标题
      * @return Column
      */
-    public function sortInput($field = 'sort', $label = '排序')
+    public function sortInput($field = 'sort', $label = null)
     {
         $this->drive->sortField($field);
-        $column = $this->column($field, $label)
+        $column = $this->column($field, $label ?? admin_trans('admin.sort'))
             ->attr('slots', ['title' => $field, 'customRender' => 'sortInput'])
             ->width(100)->align('center');
         return $column;
@@ -362,7 +378,7 @@ class Grid extends Component
     /**
      * 开启树形表格
      * @param string $pidField 父级字段
-	 * @param string $idField 下级字段
+     * @param string $idField 下级字段
      * @param bool $expand 是否展开
      */
     public function treeTable($pidField = 'pid', $idField = 'id', $expand = true)
@@ -373,6 +389,7 @@ class Grid extends Component
         $this->hidePage();
         $this->defaultExpandAllRows($expand);
     }
+
     /**
      * 操作列定义
      * @param \Closure|null $closure
@@ -380,7 +397,7 @@ class Grid extends Component
      */
     public function actions(\Closure $closure = null)
     {
-        if(!is_null($closure)){
+        if (!is_null($closure)) {
             $this->actionColumn->setClosure($closure);
         }
         return $this->actionColumn->column();
@@ -453,25 +470,26 @@ class Grid extends Component
      * @param string $label 显示的标题
      * @return Column
      */
-    public function column($field = '',$label = '')
+    public function column($field = '', $label = '')
     {
         $childrenColumns = [];
-        if($field instanceof \Closure){
-            $prop = 'group'.md5($label.time());
+        if ($field instanceof \Closure) {
+            $prop = 'group' . md5($label . time());
             $childrenColumns = $this->collectColumns($field);
             $column = new Column($prop, $label, $this);
-            $column->attr('children',array_column($childrenColumns,'attribute'));
-            foreach ($childrenColumns as $childrenColumn){
-                $childrenColumn->attr('children_row',true);
+            $column->attr('children', array_column($childrenColumns, 'attribute'));
+            foreach ($childrenColumns as $childrenColumn) {
+                $childrenColumn->attr('children_row', true);
                 $this->childrenColumn[] = $childrenColumn;
             }
-        }else{
+        } else {
             $column = new Column($field, $label, $this);
             $this->drive->realiton($field);
         }
         $this->column[] = $column;
         return $column;
     }
+
     public function collectColumns(\Closure $closure)
     {
         $offset = count($this->column);
@@ -480,17 +498,20 @@ class Grid extends Component
         $this->column = array_slice($this->column, 0, $offset);
         return $columns;
     }
+
     /**
      * 自定义列表元素
      * @param \Closure $closure
      * @return Custom
      */
-    public function custom(\Closure $closure){
+    public function custom(\Closure $closure)
+    {
         $this->customClosure = $closure;
         $custom = new Custom();
-        $this->attr('custom',$custom);
+        $this->attr('custom', $custom);
         return $custom;
     }
+
     /**
      * 解析列返回表格数据
      * @param array $datas 数据源
@@ -501,19 +522,19 @@ class Grid extends Component
     {
 
         $tableData = [];
-        $columns = array_merge($this->column,$this->childrenColumn);
+        $columns = array_merge($this->column, $this->childrenColumn);
         //解析行数据
-        foreach ($datas as $key=>$data) {
+        foreach ($datas as $key => $data) {
             //主键
-            $row = ['eadmin_id' => $data[$this->drive->getPk()] ?? $key ];
-            if(is_null($this->customClosure)){
+            $row = ['eadmin_id' => $data[$this->drive->getPk()] ?? $key];
+            if (is_null($this->customClosure)) {
                 //树形父级pid
                 if ($this->isTree) {
                     $row['eadmin_tree_id'] = $data[$this->treeId];
                     $row['eadmin_tree_parent'] = $data[$this->treeParent];
                 }
                 foreach ($columns as $column) {
-                    if($column->attr('children')){
+                    if ($column->attr('children')) {
                         continue;
                     }
                     $field = $column->attr('prop');
@@ -526,8 +547,8 @@ class Grid extends Component
                     $expandRow = call_user_func($this->expandRow, $data);
                     $row['EadminExpandRow'] = Html::create($expandRow);
                 }
-            }else{
-                $row['custom'] = call_user_func($this->customClosure,$data);
+            } else {
+                $row['custom'] = call_user_func($this->customClosure, $data);
             }
             if (!$this->hideAction && !$export) {
                 $actionColumn = clone $this->actionColumn;
@@ -536,19 +557,19 @@ class Grid extends Component
             }
             $tableData[] = $row;
         }
-        $isTotal  = false;
-        $row = ['eadmin_id'=>-1];
+        $isTotal = false;
+        $row = ['eadmin_id' => -1];
         foreach ($this->column as $column) {
             $total = $column->getTotal();
             $field = $column->attr('prop');
-            if($total === false){
+            if ($total === false) {
                 $row[$field] = '';
-            }else{
+            } else {
                 $isTotal = true;
                 $row[$field] = Html::create($total);
             }
         }
-        if($isTotal && !$export){
+        if ($isTotal && !$export) {
             $tableData[] = $row;
         }
         return $tableData;
@@ -559,10 +580,10 @@ class Grid extends Component
      */
     public function exportData()
     {
-        if(Request::has('eadmin_queue')){
+        if (Request::has('eadmin_queue')) {
             $data = Request::get();
             $data['eadmin_domain'] = Request::domain();
-            $id = sysqueue('导出excel',ExcelQueue::class,$data);
+            $id = sysqueue('导出excel', ExcelQueue::class, $data);
             return [
                 'code' => 200,
                 'data' => $id,
@@ -591,15 +612,15 @@ class Grid extends Component
         $excel->columns($columnTitle);
         if (Request::get('export_type') == 'all') {
             $count = $this->drive->getTotal();
-            $this->drive->db()->chunk(500, function ($datas) use ($excel,$count) {
+            $this->drive->db()->chunk(500, function ($datas) use ($excel, $count) {
                 $exportData = $this->parseColumn($datas, true);
                 $excel->rows($exportData);
-                Request::has('eadmin_queue_export')?$excel->queueExport($count):$excel->export();
+                Request::has('eadmin_queue_export') ? $excel->queueExport($count) : $excel->export();
                 $this->exportData = [];
             });
-            if(Request::has('eadmin_queue_export')){
+            if (Request::has('eadmin_queue_export')) {
                 return true;
-            }else{
+            } else {
                 exit;
             }
         } elseif (Request::get('export_type') == 'select') {
@@ -611,16 +632,18 @@ class Grid extends Component
         }
         $exportData = $this->parseColumn($data, true);
         $excel->rows($exportData);
-        if(Request::has('eadmin_queue_export')){
+        if (Request::has('eadmin_queue_export')) {
             $count = count($exportData);
             $excel->queueExport($count);
             return true;
-        }else{
+        } else {
             $excel->export();
             exit;
         }
     }
-    public function parseData(){
+
+    public function parseData()
+    {
         //总条数
         $this->pagination->total($this->drive->getTotal());
         //排序
@@ -647,26 +670,26 @@ class Grid extends Component
         //添加按钮
         if (!$this->hideAddButton && !is_null($this->formAction)) {
             $form = $this->formAction->form();
-			$callMethod = $form->getCallMethod();
-            $form->eventSuccess([$this->bindAttr('modelValue') => true, $form->bindAttr('model') => $callMethod]);
-            $button = Button::create('添加')
+            $callMethod = $form->getCallMethod();
+            $form->eventSuccess([$form->bindAttr('model') => $callMethod]);
+            $button = Button::create($this->formAction->addText())
                 ->type('primary')
                 ->size('small')
                 ->icon('el-icon-plus');
             $action = clone $this->formAction->component();
             if ($action instanceof Html) {
-                $button = $action->content($button)->redirect("eadmin/create.rest", ['eadmin_description' => '添加'] + $callMethod);
+                $button = $action->content($button)->redirect("eadmin/create.rest", ['eadmin_description' => $this->formAction->addText()] + $callMethod);
             } else {
-                $button = $action->bindValue(false)->reference($button)->title('添加')->form($form)->url('/eadmin/create.rest');
+                $button = $action->bindValue(false)->reference($button)->title($this->formAction->addText())->form($form)->url('/eadmin/create.rest');
             }
             //添加权限
-            $action->auth($callMethod['eadmin_class'],$callMethod['eadmin_function'],'post');
+            $action->auth($callMethod['eadmin_class'], $callMethod['eadmin_function'], 'post');
             $this->attr('addButton', $button);
         }
         //删除权限
-        if(!Admin::check($this->callClass,$this->callFunction,'delete')){
-           $this->hideDeleteButton();
-           $this->hideDeleteSelection();
+        if (!Admin::check($this->callClass, $this->callFunction, 'delete')) {
+            $this->hideDeleteButton();
+            $this->hideDeleteSelection();
         }
         //工具栏
         $this->attr('tools', $this->tools);
@@ -693,22 +716,22 @@ class Grid extends Component
             $this->column[] = $this->actionColumn->column();
         }
         //静态表格
-        if($this->attr('static')){
+        if ($this->attr('static')) {
             $data = $this->parseData();
-            $this->attr('data',$data);
+            $this->attr('data', $data);
         }
         if (request()->has('ajax_request_data') && request()->get('eadmin_class') == $this->callClass && !$this->attr('static')) {
             $data = $this->parseData();
             return [
                 'code' => 200,
                 'data' => $data,
-                'header'=> $this->attr('header'),
-                'tools'=> $this->attr('tools'),
+                'header' => $this->attr('header'),
+                'tools' => $this->attr('tools'),
                 'total' => $this->pagination->attr('total')
             ];
         } else {
             $params = (array)$this->attr('params');
-            $this->params(array_merge($this->get,request()->get(), $this->getCallMethod(),$params));
+            $this->params(array_merge($this->get, request()->get(), $this->getCallMethod(), $params));
             $this->attr('columns', array_column($this->column, 'attribute'));
             return parent::jsonSerialize(); // TODO: Change the autogenerated stub
         }

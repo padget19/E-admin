@@ -33,7 +33,7 @@ class Permission
         //验证权限
         $authNodules = array_keys(config('admin.authModule'));
         if (in_array($moudel, $authNodules) && !Admin::check($eadmin_class, $eadmin_function, $request->method())) {
-            return json(['code' => 44000, 'message' => '没有访问该操作的权限','method'=>$request->method()]);
+            return json(['code' => 44000, 'message' => admin_trans('admin.not_access_permission'),'method'=>$request->method()]);
         }
         return $next($request);
     }

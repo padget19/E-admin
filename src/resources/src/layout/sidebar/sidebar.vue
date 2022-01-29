@@ -4,6 +4,8 @@
         <el-scrollbar style="height: calc(100vh - 60px)">
             <el-menu :default-active="activeIndex"
                      :collapse="!sidebar.opend"
+                     :text-color="state.theme == 'primary-theme'?'#FFFFFF':undefined"
+                     :background-color="state.theme == 'primary-theme'?'#000000':undefined"
                      mode="vertical"
                      @select="select"
                      :default-openeds="defaultOpeneds"
@@ -99,10 +101,10 @@
 <style scoped>
 
     .collapse {
-        width: 64px;
+        width: 64px !important;
     }
     .mobile .collapse {
-        width: 0;
+        width: 0 !important;;
     }
     .mobile .collapse .el-menu{
         display: none;

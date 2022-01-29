@@ -7,27 +7,28 @@
                 </el-col>
                 <el-col :xs="24" :sm="24" :md="20" :span="20" style="text-align: right" v-if="!hideTools">
                     <el-button-group >
-                        <el-button v-if="params.date_type == 'yesterday'" size="small" type="primary" @click="requestData('yesterday')">昨天</el-button>
-                        <el-button v-else plain size="small" @click="requestData('yesterday')">昨天</el-button>
+                        <el-button v-if="params.date_type == 'yesterday'" size="small" type="primary" @click="requestData('yesterday')">
+                          {{ trans('echartCard.yesterday') }}</el-button>
+                        <el-button v-else plain size="small" @click="requestData('yesterday')">{{ trans('echartCard.yesterday') }}</el-button>
 
-                        <el-button v-if="params.date_type == 'today'" size="small" type="primary" @click="requestData('today')">今天</el-button>
-                        <el-button v-else plain size="small" @click="requestData('today')">今天</el-button>
+                        <el-button v-if="params.date_type == 'today'" size="small" type="primary" @click="requestData('today')">{{ trans('echartCard.today') }}</el-button>
+                        <el-button v-else plain size="small" @click="requestData('today')">{{ trans('echartCard.today') }}</el-button>
 
-                        <el-button v-if="params.date_type == 'week'" size="small" type="primary" @click="requestData('week')">本周</el-button>
-                        <el-button v-else plain size="small" @click="requestData('week')">本周</el-button>
+                        <el-button v-if="params.date_type == 'week'" size="small" type="primary" @click="requestData('week')">{{ trans('echartCard.week') }}</el-button>
+                        <el-button v-else plain size="small" @click="requestData('week')">{{ trans('echartCard.week') }}</el-button>
 
-                        <el-button v-if="params.date_type == 'month'" size="small" type="primary" @click="requestData('month')">本月</el-button>
-                        <el-button v-else plain size="small" @click="requestData('month')">本月</el-button>
+                        <el-button v-if="params.date_type == 'month'" size="small" type="primary" @click="requestData('month')">{{ trans('echartCard.month') }}</el-button>
+                        <el-button v-else plain size="small" @click="requestData('month')">{{ trans('echartCard.month') }}</el-button>
 
-                        <el-button v-if="params.date_type == 'year'" size="small" type="primary" @click="requestData('year')">全年</el-button>
-                        <el-button v-else plain size="small" @click="requestData('year')">全年</el-button>
+                        <el-button v-if="params.date_type == 'year'" size="small" type="primary" @click="requestData('year')">{{ trans('echartCard.year') }}</el-button>
+                        <el-button v-else plain size="small" @click="requestData('year')">{{ trans('echartCard.year') }}</el-button>
                         <el-date-picker
                                 size="small"
                                 v-model="rangeDate"
                                 type="daterange"
-                                range-separator="至"
-                                start-placeholder="开始日期"
-                                end-placeholder="结束日期"
+                                :range-separator="trans('echartCard.to')"
+                                :start-placeholder="trans('echartCard.startDate')"
+                                :end-placeholder="trans('echartCard.endDate')"
                         >
                         </el-date-picker>
                     </el-button-group>
@@ -42,10 +43,10 @@
 </template>
 
 <script>
-    import {defineComponent, ref, reactive, watch, inject} from 'vue'
+    import {trans} from '@/utils'
+    import {defineComponent, ref, reactive, watch} from 'vue'
     import {useHttp} from '@/hooks'
     import dayjs from "dayjs";
-    import {store} from '@/store'
     import {useRoute} from "vue-router";
     export default defineComponent({
         name:'EadminEchartCard',
@@ -106,6 +107,7 @@
                 })
             }
             return {
+                trans,
                 footer,
                 params,
                 rangeDate,

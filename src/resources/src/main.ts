@@ -13,9 +13,7 @@ import VueMarkdownEditor from '@kangc/v-md-editor';
 import '@kangc/v-md-editor/lib/style/base-editor.css';
 import vuepressTheme from '@kangc/v-md-editor/lib/theme/vuepress.js';
 import '@kangc/v-md-editor/lib/theme/style/vuepress.css';
-
 import Prism from 'prismjs';
-
 VueMarkdownEditor.use(vuepressTheme, {
     Prism
 })
@@ -29,7 +27,7 @@ app.use(Dropdown)
 app.use(Menu)
 app.use(Table)
 app.use(Switch)
-app.use(ElementPlus,{size: 'medium', locale :zhLocale})
+app.use(ElementPlus,{size: 'medium',locale :zhLocale})
 app.use(router)
 app.provide(store, state)
 app.config.globalProperties.$request = request

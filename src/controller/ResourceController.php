@@ -93,9 +93,9 @@ class ResourceController extends Controller
         }
         $res = $this->call()->destroy($ids);
         if ($res !== false) {
-            admin_success('操作完成', '删除成功');
+            admin_success(admin_trans('admin.operation_complete'), admin_trans('admin.delete_complete'));
         } else {
-            admin_error_message('数据保存失败');
+            admin_error_message(admin_trans('admin.save_fail'));
         }
     }
 

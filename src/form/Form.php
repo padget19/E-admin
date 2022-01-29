@@ -49,6 +49,7 @@ use think\facade\Event;
 use think\facade\Request;
 use think\helper\Str;
 use think\Model;
+use think\helper\Arr;
 
 /**
  * 表单
@@ -151,7 +152,7 @@ class Form extends Component
         $this->labelWidth('100px');
         $this->parseCallMethod();
         $this->setAction('/eadmin.rest');
-        $this->event('gridRefresh', []);
+        $this->saveCloseDialog();
         $this->validator = new ValidatorForm();
         $this->validatorBind();
         $this->description(Request::param('eadmin_description'));
@@ -166,7 +167,18 @@ class Form extends Component
         return $self;
     }
 
-
+    /**
+     * 保存成功关闭弹窗
+     * @param bool $value false不关闭
+     */
+    public function saveCloseDialog(bool $value = true){
+        $this->attr('saveCloseDialog',$value);
+        if($value){
+            $this->event('gridRefresh');
+        }else{
+            $this->removeEvent('gridRefresh');
+        }
+    }
     /**
      * 居中对齐
      * @param int $width 宽度
@@ -383,7 +395,7 @@ class Form extends Component
                 ($component instanceof Cascader || $component instanceof Map) &&
                 $attr != 'modelValue' &&
                 is_array($value) &&
-                (!empty($component->getDefault()) || !empty($component->getValue()))
+                (!empty($component->getDefault()) && !empty($component->getValue()))
             ) {
                 $val = array_shift($value);
                 $this->setData($field, $val);
@@ -453,7 +465,7 @@ class Form extends Component
                 if ($i < ($count - 1) && $i > 0) {
                     $back = $i - 1;
                     $this->actions->addLeftAction(
-                        Button::create('上一步')
+                        Button::create(admin_trans('admin.pre_step'))
                             ->sizeMedium()
                             ->where($active, $i)
                             ->event('click', [$active => $back])
@@ -462,7 +474,7 @@ class Form extends Component
                 if ($count - 2 > $i) {
                     $next = $i + 1;
                     $this->actions->addLeftAction(
-                        Button::create('下一步')
+                        Button::create(admin_trans('admin.next_step'))
                             ->sizeMedium()
                             ->where($active, $i)
                             ->event('click', [$validateField => true])
@@ -726,8 +738,8 @@ class Form extends Component
                 if ($name == 'dateRange' || $name == 'datetimeRange' || $name == 'timeRange') {
                     $component = $class::create();
                     $component->rangeField($field, $arguments[1]);
-                    $component->startPlaceholder('请选择开始时间');
-                    $component->endPlaceholder('请选择结束时间');
+                    $component->startPlaceholder(admin_trans('admin.select_start_time'));
+                    $component->endPlaceholder(admin_trans('admin.select_end_time'));
                     $this->except([$component->bindAttr('timeValue')]);
                 }
                 $prop = $component->bindAttr('modelValue');
@@ -751,9 +763,9 @@ class Form extends Component
             $prop = $component->bindAttr('modelValue');
         }
         if ($component instanceof Input) {
-            $component->placeholder('请输入' . $label);
+            $component->placeholder(admin_trans('admin.please_enter') . $label);
         } elseif ($component instanceof Select || $component instanceof Cascader) {
-            $component->placeholder('请选择' . $label);
+            $component->placeholder(admin_trans('admin.please_select') . $label);
         }
         $item = $this->item($prop, $label);
         $item->attr('validateField', $field);
@@ -802,28 +814,23 @@ class Form extends Component
      */
     public function setData(string $field, $value)
     {
-
         //数字类型转换处理
+        $value = $this->converNumber($value);
+        Arr::set($this->data, $field, $value);
+    }
+
+    protected function converNumber($value)
+    {
         if (is_array($value) && count($value) == count($value, 1)) {
             foreach ($value as &$v) {
-                if (!is_array($v) && preg_match('/^\d{1,11}$/', $v)) {
-                    $v = intval($v);
-                } elseif (is_numeric($v) && strpos($v, '.') !== false) {
-                    $v = floatval($v);
-                }
+                $v = $this->converNumber($v);
             }
-        } elseif (!is_array($value) && preg_match('/^\d{1,11}$/', $value)) {
+        } elseif (!is_array($value) && is_numeric($value) && preg_match('/^(0|[1-9][0-9]*)$/', $value) && preg_match('/^\d{1,11}$/', $value)) {
             $value = intval($value);
         } elseif (is_numeric($value) && strpos($value, '.') !== false) {
             $value = floatval($value);
         }
-
-        if (strpos($field, '.')) {
-            [$relation, $field] = explode('.', $field);
-            $this->data[$relation][$field] = $value;
-        } else {
-            $this->data[$field] = $value;
-        }
+        return $value;
     }
 
     public function getData($field = null)
@@ -903,9 +910,9 @@ class Form extends Component
         }
         if ($result !== false) {
             $url = $this->redirectUrl;
-            admin_success('操作完成', '数据保存成功')->redirect($url);
+            admin_success(admin_trans('admin.operation_complete'), admin_trans('admin.save_success'))->redirect($url);
         } else {
-            admin_error_message('数据保存失败');
+            admin_error_message(admin_trans('admin.save_fail'));
         }
     }
 

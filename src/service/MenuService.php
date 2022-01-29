@@ -37,7 +37,10 @@ class MenuService
             })
             ->order('sort asc,id desc')
             ->cache(10)
-            ->select()->toArray();
+            ->select()->map(function ($item){
+                $item['name'] = str_replace('titles.','',admin_trans('menu.titles.'.$item['name']));
+                return $item;
+            })->toArray();
         
         return $data;
     }

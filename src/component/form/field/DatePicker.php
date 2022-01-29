@@ -37,21 +37,23 @@ use Eadmin\component\form\Field;
 class DatePicker extends Field
 {
     protected $name = 'ElDatePicker';
+
     public function __construct($field = null, $value = '')
     {
         $this->bindValue($value, 'timeValue', $field);
         $this->shortcuts([
             [
-                'text'=>'昨天',
-                'value'=>Carbon::yesterday()
+                'text' => admin_trans('admin.yesterday'),
+                'value' => Carbon::yesterday()
             ],
             [
-                'text'=>'今天',
-                'value'=>Carbon::today()
+                'text' => admin_trans('admin.today'),
+                'value' => Carbon::today()
             ],
         ]);
         parent::__construct(null, $value);
     }
+
     /**
      * 时间范围字段绑定
      * @param string $startField
@@ -64,24 +66,24 @@ class DatePicker extends Field
     {
         $this->shortcuts([
             [
-                'text'=>'昨天',
-                'value'=>[Carbon::yesterday(),Carbon::yesterday()]
+                'text' => admin_trans('admin.yesterday'),
+                'value' => [Carbon::yesterday(), Carbon::yesterday()]
             ],
             [
-                'text'=>'今天',
-                'value'=>[Carbon::today(),Carbon::today()]
+                'text' => admin_trans('admin.today'),
+                'value' => [Carbon::today(), Carbon::today()]
             ],
             [
-                'text'=>'本周',
-                'value'=>[Carbon::today()->startOfWeek(),Carbon::parse()->endOfWeek()]
+                'text' => admin_trans('admin.this_week'),
+                'value' => [Carbon::today()->startOfWeek(), Carbon::parse()->endOfWeek()]
             ],
             [
-                'text'=>'本月',
-                'value'=>[Carbon::parse()->startOfMonth(),Carbon::parse()->endOfMonth()]
+                'text' => admin_trans('admin.this_month'),
+                'value' => [Carbon::parse()->startOfMonth(), Carbon::parse()->endOfMonth()]
             ],
             [
-                'text'=>'今年',
-                'value'=>[Carbon::parse()->startOfYear(),Carbon::parse()->endOfYear()]
+                'text' => admin_trans('admin.this_year'),
+                'value' => [Carbon::parse()->startOfYear(), Carbon::parse()->endOfYear()]
             ],
         ]);
         $this->bind($startField, $startValue);

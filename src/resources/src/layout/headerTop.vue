@@ -2,7 +2,12 @@
     <div class="header-container">
         <i v-if="sidebar.visible || state.device === 'mobile'" :class="sidebar.opend?'el-icon-s-unfold hamburger':'el-icon-s-fold hamburger'"
            style="font-size: 18px" @click="collapse"/>
-        <el-menu :default-active="activeIndex" text-color="hsla(0,0%,100%,.7)" active-text-color="#ffffff" :background-color="variables.theme" @select="selectMenu" class="menu" mode="horizontal" v-show="state.topMenuMode && state.device === 'desktop'">
+        <el-menu :default-active="activeIndex"
+                 :text-color="state.theme == 'light-theme'?'hsla(0,0%,100%,.7)':undefined"
+                 :active-text-color="state.theme == 'light-theme'?'#FFFFFF':undefined"
+                 :background-color="state.theme == 'light-theme'?variables.theme:undefined"
+                 @select="selectMenu" class="menu" mode="horizontal"
+                 v-show="state.topMenuMode && state.device === 'desktop'">
             <el-menu-item v-for="item in menus" :index="item.id+''">
                 <i :class="item.icon" v-if="item.icon"></i>
                 <span>{{item.name}}</span>
@@ -10,11 +15,20 @@
         </el-menu>
         <breadcrumb v-if="!state.topMenuMode && state.device != 'mobile'" style="margin-right: 5px"></breadcrumb>
         <div class="right-menu">
-
-            <el-tooltip effect="dark" content="全屏" placement="bottom">
+            <el-dropdown @command="commandLang" v-if="state.lang.enable">
+                <div class="right-menu-item hover-effect" style="color: #FFFFFF">
+                    <i class="fa fa-language" ></i>
+                </div>
+                <template #dropdown>
+                    <el-dropdown-menu>
+                        <el-dropdown-item v-for="(item,key) in state.lang.list" :command="key">{{item}}</el-dropdown-item>
+                    </el-dropdown-menu>
+                </template>
+            </el-dropdown>
+            <el-tooltip effect="dark" :content="trans('fullScreen')" placement="bottom">
                 <screenfull id="screenfull" class="right-menu-item hover-effect" />
             </el-tooltip>
-            <el-tooltip effect="dark" content="刷新" placement="bottom">
+            <el-tooltip effect="dark" :content="trans('refresh')" placement="bottom">
                 <div class="right-menu-item hover-effect" @click="refreshs">
                     <i class="el-icon-refresh-right refresh"/>
                 </div>
@@ -30,8 +44,8 @@
                     <div class="avatar-wrapper">
                         <img :src="state.info.avatar" class="user-avatar">
                         <span class="right-menu-item" style="line-height: 1">
-                        <span style="color: #ffffff">{{ state.info.nickname }}</span>
-                        <div style="line-height: 18px"><el-badge is-dot type="success" style="top:4px;"/> <span style="color: #ffffff">{{ state.info.username }}</span></div>
+                        <span>{{ state.info.nickname }}</span>
+                        <div style="line-height: 18px"><el-badge type="success" is-dot  style="top:4px;"/> <span>{{ state.info.username }}</span></div>
                         </span>
                         <i class="el-icon-caret-bottom" style="line-height: 30px"/>
                     </div>
@@ -40,7 +54,7 @@
                     <a-menu v-if="state.info.dropdownMenu">
                         <render v-for="item in state.info.dropdownMenu" :data="item"></render>
                         <a-menu-item divided @click.native="logout">
-                            <span style="display:block;">退出登陆</span>
+                            <span style="display:block;">{{ trans('logout') }}</span>
                         </a-menu-item>
                     </a-menu>
                 </template>
@@ -52,13 +66,14 @@
 <script>
     import variables  from '../styles/theme.scss';
     import {useRoute} from 'vue-router'
-    import {link, findParent, findTree,refresh} from '@/utils'
+    import {link, findParent, findTree,refresh,trans} from '@/utils'
     import {defineComponent, watch, inject, computed} from 'vue'
     import {store, action, state} from '@/store'
     import router from "../router";
     import screenfull from "@/components/screenfull.vue";
     import notice from "@/layout/notice.vue";
     import breadcrumb from '@/components/breadcrumb.vue'
+    import Cookies from 'js-cookie'
     export default defineComponent({
         name: "headerTop",
         components:{
@@ -176,7 +191,14 @@
             function changeTheme(){
               action.changeTheme()
             }
+            //切换语言
+            function commandLang(cmd) {
+                Cookies.set(state.lang.cookie_var,cmd)
+                location.reload()
+            }
             return {
+                trans,
+                commandLang,
                 activeIndex,
                 state,
                 selectMenu,
@@ -199,12 +221,6 @@
         scrollbar-width:none;
         display: flex;
     }
-    .menu .el-menu-item i{
-       color: hsla(0,0%,100%,.7)!important;
-    }
-    .menu .el-menu-item:hover{
-        background-color: hsla(0,0%,100%,.1)!important;
-    }
     .header-container {
         display: flex;
         align-items: center;
@@ -217,7 +233,7 @@
     .hamburger {
         padding: 0 10px;
         cursor: pointer;
-        color: #ffffff;
+
     }
 
     .right-menu {
@@ -227,7 +243,7 @@
         display: -webkit-flex;
         align-items: center;
         justify-content: center;
-        color: #ffffff;
+
 
         &:focus {
             outline: none;
@@ -262,7 +278,7 @@
                 display: -webkit-flex;
                 align-items: center;
                 justify-content: center;
-                color: #ffffff;
+
                 position: relative;
                 padding: 0 8px;
 

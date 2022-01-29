@@ -26,7 +26,7 @@ class Detail extends Component
     use CallProvide;
     protected $data = null;
     protected $id = null;
-    protected $title = '详情';
+    protected $title = '';
     protected $card = null;
     protected $row;
     protected $fields = [];
@@ -38,9 +38,9 @@ class Detail extends Component
         $this->data = $data;
         $this->id = $id;
         $this->parseCallMethod();
-        $this->title($this->title);
+        $this->title(admin_trans('admin.detail'));
         $this->card = $this->createCard();
-        $this->bind('eadmin_description', '详情');
+        $this->bind('eadmin_description', admin_trans('admin.detail'));
         $this->attr('class','eadmin-detail');
         parent::__construct();
     }
@@ -143,8 +143,11 @@ class Detail extends Component
      * @param string $label 标签
      * @return Column
      */
-    public function userInfo($avatar = 'avatar', $nickname = 'nickname', $label = '用户信息')
+    public function userInfo($avatar = 'avatar', $nickname = 'nickname', $label = null)
     {
+        if(is_null($label)){
+            $label = admin_trans('admin.user_info');
+        }
         $field = $this->field($avatar, $label);
         return $field->display(function ($val, $data) use ($nickname) {
             $nicknameValue = $this->getData($nickname);

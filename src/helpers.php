@@ -161,6 +161,18 @@ if (!function_exists('hex2rgba')) {
         return $rgb;
     }
 }
+if (!function_exists('admin_trans')) {
+    /**
+     * 获取语言变量值
+     * @param string $name 语言变量名
+     * @param array  $vars 动态变量值
+     * @param string $lang 语言
+     * @return mixed
+     */
+    function admin_trans(string $name, array $vars = [], string $lang = ''){
+        return app('admin.translator')->trans($name,$vars,$lang);
+    }
+}
 if (!function_exists('rgbToHex')) {
     /**
      * RGB转 十六进制
@@ -211,4 +223,5 @@ if (!function_exists('color_mix')) {
         return rgbToHex("rgb($r,$g,$b)");
     }
 }
+
 

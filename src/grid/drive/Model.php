@@ -262,13 +262,13 @@ class Model implements GridInterface
                 ->buildSql();
             $this->model->where($pk, $data['id'])->update([$this->sortField => $data['sort']]);
             $res = Db::execute("update {$this->model->getTable()} inner join {$sortSql} a on a.{$pk}={$this->model->getTable()}.{$pk} set {$this->sortField}=a.rownum");
-            admin_success('操作完成', '排序成功');
+            admin_success(admin_trans('admin.operation_complete'), admin_trans('admin.sort_success'));
         } else {
             $res = $this->model->removeWhereField($this->softDeleteField)->strict(false)->whereIn($pk, $ids)->update($data);
             if ($res !== false) {
-                admin_success('操作完成', '数据保存成功')->redirect($url);
+                admin_success(admin_trans('admin.operation_complete'), admin_trans('admin.save_success'))->redirect($url);
             } else {
-                admin_error_message('数据保存失败');
+                admin_error_message(admin_trans('admin.save_fail'));
             }
         }
     }

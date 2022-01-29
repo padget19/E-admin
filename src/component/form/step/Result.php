@@ -46,9 +46,9 @@ class Result
      * @param string  $content 内容
      * @return \Eadmin\component\basic\Result
      */
-    public function sucess($title='操作成功', $content='')
+    public function sucess($title=null, $content='')
     {
-        return $this->result($title, $content, 'success')->extra($this->resetButton()->typePrimary());
+        return $this->result($title ?? admin_trans('admin.operation_complete'), $content, 'success')->extra($this->resetButton()->typePrimary());
     }
 
     /**
@@ -111,9 +111,9 @@ class Result
      * @param string $text
      * @return Button
      */
-    public function resetButton($text = '重新提交')
+    public function resetButton($text = null)
     {
-        return Button::create($text)
+        return Button::create($text ?? admin_trans('admin.resubmit'))
             ->event('click', [
                 $this->data['eadmin_step'] => 0,
                 $this->data['eadmin_step_reset'] => true

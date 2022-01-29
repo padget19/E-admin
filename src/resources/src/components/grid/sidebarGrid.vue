@@ -12,7 +12,7 @@
                     class="ele-btn-icon"
                     :disabled="!current"
                     @click="del"
-                    size="small">删除
+                    size="small">{{ trans('el.upload.delete') }}
             </el-button>
         </div>
         <div class="search" v-if="!hideFilter">
@@ -25,6 +25,7 @@
 </template>
 
 <script>
+    import {trans} from '@/utils'
     import {defineComponent,reactive,toRefs,computed} from "vue";
     import useHttp from "../../hooks/use-http";
     import { ElMessageBox} from 'element-plus'
@@ -149,6 +150,7 @@
               return data
             })
             return {
+                trans,
                 del,
                 loading,
                 getData,

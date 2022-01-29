@@ -24,11 +24,12 @@ class FileService extends Service
 
     protected $totalSizeCacheKey;
     public $upType = 'local';
-
+    protected $disableExt = [];
     public function __construct(App $app)
     {
         parent::__construct($app);
         $this->upType = config('admin.uploadDisks', 'local');
+        $this->disableExt = config('admin.upload.extension.disable',['php']);
     }
 
     /**
@@ -70,6 +71,9 @@ class FileService extends Service
                 return $this->checkChunkExtis($filename, $chunkSaveDir, $chunkNumber, $chunkSize, $totalSize);
             }
         } else {
+			$fileInfo = pathinfo($file->getOriginalName());
+			$real_name = $fileInfo['filename'] ?? '';
+			$extension = $fileInfo['extension'] ?? '';
             if ($totalChunks == 1) {
                 //分片总数量1直接保存
                 if (substr($saveDir, -1) == '/') {
@@ -85,13 +89,26 @@ class FileService extends Service
                 $res = Filesystem::disk($this->upType)->putFileAs($chunkSaveDir, $file, $chunkName);
 
                 //判断分片数量是否和总数量一致,一致就合并分片文件
-
                 if ($this->getChunkDirCounts($chunkSaveDir) == $totalChunks) {
                     if (!Cache::has(md5($filename))) {
                         Cache::set(md5($filename), 1, 10);
-                        $url = $this->merge($chunkSaveDir, $filename, $totalChunks, $saveDir, $isUniqidmd5);
+						$info = $this->merge($chunkSaveDir, $filename, $totalChunks, $saveDir, $isUniqidmd5);
+						if(Admin::id() && request()->has('file_type')) {
+							SystemFile::create([
+								'name'      => $filename,
+								'real_name' => request()->param('filename', $real_name),
+								'url'       => $info['url'],
+								'path'      => $info['saveName'],
+								'cate_id'   => request()->param('cate_id', 0),
+								'ext'       => $extension,
+								'file_size' => request()->param('totalSize', 0),
+								'file_type' => request()->param('file_type', ''),
+								'uptype'    => $this->upType,
+								'admin_id'  => Admin::id(),
+							]);
+						}
                         Cache::delete(md5($filename));
-                        return $url;
+                        return $info['url'];
                     }
                     return true;
                 }
@@ -149,11 +166,16 @@ class FileService extends Service
         if (!empty($upType)) {
             $this->upType = $upType;
         }
-
-        $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-
+		if (is_null($fileName)) {
+			$ext = pathinfo($file->getOriginalName(), PATHINFO_EXTENSION);
+		} else {
+			$ext = pathinfo($fileName, PATHINFO_EXTENSION);
+		}
+        if(in_array($ext,$this->disableExt)){
+            return false;
+        }
         if ($isUniqidmd5) {
-            $fileName = md5((string)microtime(true)) . '.' . $ext;;
+            $fileName = md5((string)microtime(true)) . '.' . $ext;
         } elseif (empty($fileName)) {
             $fileName = $file->getOriginalName();
         }
@@ -271,7 +293,7 @@ class FileService extends Service
      * @param mixed $totalChunks
      * @param string $saveDir 指定保存目录
      * @param bool $isUniqidmd5 是否唯一文件名
-     * @return bool|string
+     * @return bool|array
      */
     protected function merge($chunkSaveDir, $filename, $totalChunks, $saveDir, $isUniqidmd5)
     {
@@ -300,7 +322,7 @@ class FileService extends Service
         rmdir($chunkSaveDir);
         if ($res) {
             $this->compressImage($put_filename);
-            return $this->url($saveName);
+            return ['url' => $this->url($saveName), 'saveName' => $saveName];
         } else {
             return false;
         }

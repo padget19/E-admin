@@ -42,17 +42,22 @@ class Actions extends Html
     //是否下拉菜单
     protected $isDropdown = false;
     protected $dropdown;
-    protected $editText = '编辑';
-    protected $detailText = '详情';
-    protected $delText = '删除';
+    protected $editText = '';
+    protected $detailText = '';
+    protected $delText = '';
     protected $space;
+
     public function __construct($grid)
     {
         parent::__construct();
         $this->grid = $grid;
         $this->attr('class', 'EadminAction');
         $this->column = new Column('EadminAction', '', $grid);
+        $this->editText = admin_trans('admin.edit');
+        $this->delText = admin_trans('admin.delete');
+        $this->detailText =  admin_trans('admin.detail');
     }
+
     public function row($data)
     {
         $this->space = Space::create()->wrap()->size(10);
@@ -69,6 +74,13 @@ class Actions extends Html
         //前面追加
         foreach ($this->prependArr as $content) {
             $this->space->content($content);
+        }
+        if (!is_null($this->grid->formAction())) {
+            $this->editText = $this->grid->formAction()->editText();
+            $this->delText = $this->grid->formAction()->delText();
+        }
+        if (!is_null($this->grid->detailAction())) {
+            $this->detailText = $this->grid->detailAction()->detailText();
         }
         if ($this->isDropdown) {
             $this->actionDropdown();
@@ -117,7 +129,8 @@ class Actions extends Html
                     $button = $action->content($text)->redirect("eadmin/{$this->id}/edit.rest", ['eadmin_description' => $this->editText] + $callMethod);
                     $this->dropdown->item($button);
                 } else {
-                    $button = $action->bindValue(false)->title($this->editText)->url("/eadmin/{$this->id}/edit.rest")->params($callMethod);
+
+                    $button = $action->bindValue(false)->title($this->editText.$this->grid->formAction()->form()->bind('eadmin_title'))->url("/eadmin/{$this->id}/edit.rest")->params($callMethod);
                     $button->bindValue(false, 'show');
                     $visible = $button->bindAttr('show');
                     $this->dropdown->content($button, 'reference');
@@ -132,20 +145,20 @@ class Actions extends Html
             $text = '<i class="el-icon-delete" /> ' . $this->delText;
 
             if (request()->has('eadmin_deleted') && !$this->grid->attr('hideTrashedRestore')) {
-                $text = '<i class="el-icon-help" /> 恢复数据 ';
+                $text = '<i class="el-icon-help" /> ' . admin_trans('admin.recover_data');
                 $url = "/eadmin/batch.rest";
-                $confirm = Confirm::create($text)->message('确认恢复？')
+                $confirm = Confirm::create($text)->message(admin_trans('admin.confim_recover'))
                     ->url($url)
                     ->type('warning')
                     ->params($params + ['delete_time' => null, 'eadmin_ids' => [$this->id]])
                     ->method('put');
                 $this->dropdown->item($confirm);
                 $params['trueDelete'] = true;
-                $text = '<i class="el-icon-delete" /> 彻底删除';
+                $text = '<i class="el-icon-delete" /> ' . admin_trans('admin.true_delete');
             }
-            if(!$this->grid->attr('hideTrashedDelete') || !request()->has('eadmin_deleted')){
+            if (!$this->grid->attr('hideTrashedDelete') || !request()->has('eadmin_deleted')) {
                 $url = '/eadmin/' . $this->id . '.rest';
-                $confirm = Confirm::create($text)->message('确认删除？')
+                $confirm = Confirm::create($text)->message(admin_trans('admin.confim_delete'))
                     ->url($url)
                     ->type('error')
                     ->params($params)
@@ -191,7 +204,8 @@ class Actions extends Html
                 if ($action instanceof Html) {
                     $button = $action->content($button)->redirect("eadmin/{$this->id}/edit.rest", ['eadmin_description' => $this->editText] + $callMethod);
                 } else {
-                    $button = $action->bindValue(false)->title($this->editText)->reference($button)->url("/eadmin/{$this->id}/edit.rest")->params($callMethod);
+
+                    $button = $action->bindValue(false)->title($this->editText.$this->grid->formAction()->form()->bind('eadmin_title'))->reference($button)->url("/eadmin/{$this->id}/edit.rest")->params($callMethod);
                 }
 
                 $this->space->content($button);
@@ -204,21 +218,21 @@ class Actions extends Html
             $text = $this->delText;
             if (request()->has('eadmin_deleted') && !$this->grid->attr('hideTrashedRestore')) {
                 $this->space->content(
-                    Button::create('恢复数据')
+                    Button::create(admin_trans('admin.recover_data'))
                         ->size('small')
                         ->icon('el-icon-s-help')
-                        ->save($params + ['delete_time' => null, 'eadmin_ids' => [$this->id]], "/eadmin/batch.rest", '确认恢复?')->method('put')
+                        ->save($params + ['delete_time' => null, 'eadmin_ids' => [$this->id]], "/eadmin/batch.rest", admin_trans('admin.confim_recover'))->method('put')
                 );
                 $params['trueDelete'] = true;
-                $text = '彻底删除';
+                $text = admin_trans('admin.true_delete');
             }
-            if(!$this->grid->attr('hideTrashedDelete') || !request()->has('eadmin_deleted')){
+            if (!$this->grid->attr('hideTrashedDelete') || !request()->has('eadmin_deleted')) {
                 $url = '/eadmin/' . $this->id . '.rest';
                 $button = Button::create($text)
                     ->type('danger')
                     ->size('small')
                     ->icon('el-icon-delete')
-                    ->confirm('确认删除？', $url)
+                    ->confirm(admin_trans('admin.confim_delete'), $url)
                     ->type('error')
                     ->params($params)
                     ->method('DELETE');
@@ -231,10 +245,13 @@ class Actions extends Html
     /**
      * @return Dropdown
      */
-    public function dropdown($text = '操作')
+    public function dropdown($text = null)
     {
+        if (is_null($text)) {
+            $text = admin_trans('admin.action');
+        }
         $this->isDropdown = true;
-        $this->dropdown = Dropdown::create(Button::create($text.' <i class="el-icon-arrow-down" />')->size('mini'));
+        $this->dropdown = Dropdown::create(Button::create($text . ' <i class="el-icon-arrow-down" />')->size('mini'));
         return $this->dropdown;
     }
 
@@ -290,9 +307,10 @@ class Actions extends Html
         $this->appendArr[] = $val;
         return $this;
     }
+
     public function jsonSerialize()
     {
-        if(count($this->space->content) > 0){
+        if (count($this->space->content) > 0) {
             $this->content($this->space);
         }
         return parent::jsonSerialize(); // TODO: Change the autogenerated stub

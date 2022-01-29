@@ -1,7 +1,8 @@
 @import './base.scss';
 @import './variables.scss';
 @import './element-ui.scss';
-@import './sidebar.scss';
+@import 'theme/light/sidebar.scss';
+@import 'theme/primary/sidebar.scss';
 @import './highlight.scss';
 
 html {
@@ -108,4 +109,7 @@ body *::-webkit-scrollbar-thumb:hover {
 }
 .eadmin-horizontal .el-radio{
   line-height: 2
+}
+.eadmin-select-tree .el-tree-node__content{
+  height: 34px;
 }

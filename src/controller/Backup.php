@@ -38,16 +38,16 @@ class Backup extends Controller
     {
         $data = BackupData::instance()->getBackUpList();
         return Grid::create($data,function (Grid $grid){
-            $grid->title('数据库备份');
-            $grid->column('name', '备份名称');
-            $grid->column('size', '备份大小');
-            $grid->column('create_time', '备份时间');
+            $grid->title(admin_trans('backup.backup_database'));
+            $grid->column('name', admin_trans('backup.fields.name'));
+            $grid->column('size', admin_trans('backup.fields.size'));
+            $grid->column('create_time', admin_trans('backup.fields.time'));
             $grid->actions(function (Actions $actions, $data) {
                 $actions->prepend(
-                    Button::create('还原')
+                    Button::create(admin_trans('backup.reduction'))
                         ->typePrimary()
                         ->sizeSmall()
-                        ->save(['id' => $data['id']], 'backup/reduction', '确认还原备份？')
+                        ->save(['id' => $data['id']], 'backup/reduction', admin_trans('backup.confirm_reduction'))
                 );
             });
             $grid->deling(function ($ids) {
@@ -71,15 +71,12 @@ class Backup extends Controller
         return Form::create(new Config(),function (Form $form){
             $form->inline();
             $form->size('mini');
-            $form->radio('databackup_on', '自动备份')->options([
-                1 => '开启',
-                0 => '关闭',
-            ])->default(0)->themeButton();
-            $form->number('database_number', '最多保留')->min(1)->append('<span style="padding-left: 12px">份</span>')->required();
-            $form->number('database_day', '	数据库每')->min(1)->append('<span style="padding-left: 12px">天自动备份</span>')->required();
+            $form->radio('databackup_on', admin_trans('backup.auto'))->options(admin_trans('backup.options.databackup_on'))->default(0)->themeButton();
+            $form->number('database_number', admin_trans('backup.max_retention'))->min(1)->append('<span style="padding-left: 12px">'.admin_trans('backup.fen').'</span>')->required();
+            $form->number('database_day', ' '.admin_trans('backup.every_database'))->min(1)->append('<span style="padding-left: 12px">'.admin_trans('backup.day_auto').'</span>')->required();
             $form->actions(function (FormAction $action) {
                 $action->submitButton()->sizeMini();
-                $action->addRightAction(Button::create('备份数据库')->typeWarning()->sizeMini()->save([], 'backup/add'));
+                $action->addRightAction(Button::create(admin_trans('backup.backup_database'))->typeWarning()->sizeMini()->save([], 'backup/add'));
                 $action->hideResetButton();
             });
         });
@@ -93,9 +90,9 @@ class Backup extends Controller
     public function reduction($id)
     {
         if (BackupData::instance()->reduction($id)) {
-            admin_success_message('数据库还原完成');
+            admin_success_message(admin_trans('backup.reduction'));
         } else {
-            admin_error_message('数据库还原失败');
+            admin_error_message(admin_trans('backup.fail'));
         }
     }
 
@@ -108,8 +105,8 @@ class Backup extends Controller
     {
         $res = BackupData::instance()->backup();
         if ($res === true) {
-            
-            admin_success_message('数据库备份成功')->refresh();
+
+            admin_success_message(admin_trans('backup.success'))->refresh();
         } else {
             admin_error_message($res);
         }

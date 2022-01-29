@@ -1601,14 +1601,14 @@
 
 "@vue/reactivity@3.0.11":
   version "3.0.11"
-  resolved "https://registry.npmmirror.com/@vue/reactivity/download/@vue/reactivity-3.0.11.tgz?cache=0&sync_timestamp=1632406840250&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40vue%2Freactivity%2Fdownload%2F%40vue%2Freactivity-3.0.11.tgz#07b588349fd05626b17f3500cbef7d4bdb4dbd0b"
+  resolved "https://registry.npmmirror.com/@vue/reactivity/download/@vue/reactivity-3.0.11.tgz#07b588349fd05626b17f3500cbef7d4bdb4dbd0b"
   integrity sha1-B7WINJ/QViaxfzUAy+99S9tNvQs=
   dependencies:
     "@vue/shared" "3.0.11"
 
 "@vue/runtime-core@3.0.11":
   version "3.0.11"
-  resolved "https://registry.npmmirror.com/@vue/runtime-core/download/@vue/runtime-core-3.0.11.tgz?cache=0&sync_timestamp=1632406841763&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40vue%2Fruntime-core%2Fdownload%2F%40vue%2Fruntime-core-3.0.11.tgz#c52dfc6acf3215493623552c1c2919080c562e44"
+  resolved "https://registry.npmmirror.com/@vue/runtime-core/download/@vue/runtime-core-3.0.11.tgz#c52dfc6acf3215493623552c1c2919080c562e44"
   integrity sha1-xS38as8yFUk2I1UsHCkZCAxWLkQ=
   dependencies:
     "@vue/reactivity" "3.0.11"
@@ -1616,7 +1616,7 @@
 
 "@vue/runtime-dom@3.0.11":
   version "3.0.11"
-  resolved "https://registry.npmmirror.com/@vue/runtime-dom/download/@vue/runtime-dom-3.0.11.tgz?cache=0&sync_timestamp=1632406842689&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40vue%2Fruntime-dom%2Fdownload%2F%40vue%2Fruntime-dom-3.0.11.tgz#7a552df21907942721feb6961c418e222a699337"
+  resolved "https://registry.npmmirror.com/@vue/runtime-dom/download/@vue/runtime-dom-3.0.11.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2F%40vue%2Fruntime-dom%2Fdownload%2F%40vue%2Fruntime-dom-3.0.11.tgz#7a552df21907942721feb6961c418e222a699337"
   integrity sha1-elUt8hkHlCch/raWHEGOIippkzc=
   dependencies:
     "@vue/runtime-core" "3.0.11"
@@ -4368,10 +4368,10 @@ electron-to-chromium@^1.3.723:
   resolved "https://registry.nlark.com/electron-to-chromium/download/electron-to-chromium-1.3.743.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.nlark.com%2Felectron-to-chromium%2Fdownload%2Felectron-to-chromium-1.3.743.tgz#fcec24d6d647cb84fd796b42caa1b4039a180894"
   integrity sha1-/Owk1tZHy4T9eWtCyqG0A5oYCJQ=
 
-element-plus@^1.0.2-beta.36:
+element-plus@1.0.2-beta.36:
   version "1.0.2-beta.36"
-  resolved "https://registry.nlark.com/element-plus/download/element-plus-1.0.2-beta.36.tgz?cache=0&sync_timestamp=1625823476329&other_urls=https%3A%2F%2Fregistry.nlark.com%2Felement-plus%2Fdownload%2Felement-plus-1.0.2-beta.36.tgz#78a7e1be10b9622c4fc342fdce0801650f30bb01"
-  integrity sha1-eKfhvhC5YixPw0L9zggBZQ8wuwE=
+  resolved "https://registry.npmjs.org/element-plus/-/element-plus-1.0.2-beta.36.tgz#78a7e1be10b9622c4fc342fdce0801650f30bb01"
+  integrity sha512-5Qc54rH0GGtFRXpfA4ilpcOzdAw6t2m4mBXMXYjs9c5RSYP+EV+gJyfhyolXqZoOtYZ35ovBcqljlIJJD6Nz7g==
   dependencies:
     "@popperjs/core" "^2.4.4"
     async-validator "^3.4.0"
@@ -6257,6 +6257,11 @@ js-base64@^2.1.8, js-base64@^2.5.2:
   version "2.6.4"
   resolved "https://registry.nlark.com/js-base64/download/js-base64-2.6.4.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.nlark.com%2Fjs-base64%2Fdownload%2Fjs-base64-2.6.4.tgz#f4e686c5de1ea1f867dbcad3d46d969428df98c4"
   integrity sha1-9OaGxd4eofhn28rT1G2WlCjfmMQ=
+
+js-cookie@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.npmjs.org/js-cookie/-/js-cookie-3.0.1.tgz#9e39b4c6c2f56563708d7d31f6f5f21873a92414"
+  integrity sha512-+0rgsUXZu4ncpPxRL+lNEptWMOWl9etvPHc/koSRp6MPwpRYAhmk0dUG00J4bxVV3r9uUzfo24wW0knS07SKSw==
 
 js-md5@^0.7.3:
   version "0.7.3"
@@ -10349,9 +10354,9 @@ vue-types@^3.0.0:
   dependencies:
     is-plain-object "3.0.1"
 
-vue@^3.0.11:
+vue@3.0.11:
   version "3.0.11"
-  resolved "https://registry.npmmirror.com/vue/download/vue-3.0.11.tgz#c82f9594cbf4dcc869241d4c8dd3e08d9a8f4b5f"
+  resolved "https://registry.npmmirror.com/vue/download/vue-3.0.11.tgz?cache=0&sync_timestamp=1633712555314&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Fvue%2Fdownload%2Fvue-3.0.11.tgz#c82f9594cbf4dcc869241d4c8dd3e08d9a8f4b5f"
   integrity sha1-yC+VlMv03MhpJB1MjdPgjZqPS18=
   dependencies:
     "@vue/compiler-dom" "3.0.11"

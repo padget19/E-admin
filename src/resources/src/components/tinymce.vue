@@ -1,8 +1,16 @@
 <template>
+  <div class="tags" v-if="tags.length > 0">
+    <div>点击插入：</div>
+    <div class="tags-group">
+      <span v-for="item in tags" @click="insertTag" class="eadmin-tag">{{ item }}</span>
+    </div>
+  </div>
   <editor
-    v-model="myValue"
-    :init="init"
+      v-model="myValue"
+      :init="init"
+      :id="elementId"
   />
+
 </template>
 <script>
 import tinymce from 'tinymce/tinymce'
@@ -46,10 +54,13 @@ import 'tinymce/plugins/wordcount'
 import 'tinymce/plugins/print'
 import 'tinymce/icons/default'
 import OSS from 'ali-oss'
-import md5 from 'js-md5'
 import * as qiniu from 'qiniu-js'
-export default {
-  name:'EadminEditor',
+import {uniqidMd5} from '@/utils'
+import {defineComponent, reactive, watch, onMounted,toRefs} from "vue";
+import {ElMessage,ElLoading} from 'element-plus';
+import variables  from '../styles/theme.scss';
+export default defineComponent({
+  name: 'EadminEditor',
   components: {
     Editor
   },
@@ -62,7 +73,7 @@ export default {
       type: String,
       default: ''
     },
-    valueModel: {
+    modelValue: {
       type: String,
       default: ''
     },
@@ -105,36 +116,45 @@ export default {
     toolbar: {
       type: [String, Array],
       default: 'bold italic underline strikethrough | fontsizeselect | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist | outdent indent blockquote | undo redo | link unlink image axupimgs media code | removeformat fullscreen'
+    },
+    options: {
+      type: [Object, Array],
+      default: {}
+    },
+    tags: {
+      type: Array,
+      default: []
     }
   },
-  data() {
-    return {
+  emits: ['update:modelValue'],
+  setup(props, ctx) {
+    const state = reactive({
       init: {
-        base_url:'/eadmin/tinymce',
+        base_url: '/eadmin/tinymce',
         language_url: `/eadmin/tinymce/langs/zh_CN.js`,
         language: 'zh_CN',
         skin_url: `/eadmin/tinymce/skins/ui/oxide`,
         content_css: `/eadmin/tinymce/skins/content/default/content.css`,
-        height: this.height,
-        width: this.width,
+        height: props.height,
+        width: props.width,
         menubar: false,
         plugins: 'axupimgs advlist anchor autolink autosave code codesample colorpicker  contextmenu directionality fullscreen hr image imagetools insertdatetime link lists media nonbreaking noneditable pagebreak preview print save searchreplace spellchecker tabfocus table template textcolor textpattern visualblocks visualchars wordcount',
-        toolbar: this.toolbar,
+        toolbar: props.toolbar,
         file_picker_types: 'media',
-        video_template_callback:(data)=>{
-          return '<video width="' + data.width + '" height="' + data.height + '"' + (data.poster ? ' poster="' + data.poster + '"' : '') + ' controls="controls" src="' + data.source +'"></video>';
+        video_template_callback: (data) => {
+          return '<video width="' + data.width + '" height="' + data.height + '"' + (data.poster ? ' poster="' + data.poster + '"' : '') + ' controls="controls" src="' + data.source + '"></video>';
         },
-        file_picker_callback: (callback, value, meta)=> {
+        file_picker_callback: (callback, value, meta) => {
           if (meta.filetype == 'media') {
             let input = document.createElement('input');//创建一个隐藏的input
             input.setAttribute('type', 'file');
-            let that = this;
             input.onchange = function () {
               let file = this.files[0];//选取第一个文件
-              that.upload(file).then(res=>{
+              upload(file).then(res => {
                 callback(res, {title: file.name})
-              }).catch(res=>{
-                that.$message({
+              }).catch(res => {
+
+                ElMessage({
                   type: 'error',
                   message: res
                 })
@@ -146,15 +166,15 @@ export default {
         },
         branding: false,
         convert_urls: false,
-        content_style: 'img {max-width:100% !important }',
+        content_style: 'img {max-width:100% !important } .eadmin-tag{background-color:#ecf5ff;border-color:#d9ecff;color:#409eff;display:inline-block;height:32px;padding:0 10px;line-height:30px;font-size:12px;color:'+variables.theme+';border-width:1px;border-style:solid;border-radius:4px;box-sizing:border-box;white-space:nowrap} .eadmin-tag +.eadmin-tag{margin-left:8px}',
         external_plugins: {
           'powerpaste': '/eadmin/tinymce/plugins/powerpaste/plugin.min.js'
         },
         images_upload_handler: (blobInfo, succFun, failFun) => {
-          this.upload(blobInfo.blob()).then(res=>{
+          upload(blobInfo.blob()).then(res => {
             succFun(res)
-          }).catch(res=>{
-            this.$message({
+          }).catch(res => {
+            ElMessage({
               type: 'error',
               message: res
             })
@@ -162,23 +182,28 @@ export default {
         }
       },
       oss: null,
-      myValue: this.valueModel,
-      loading:null,
+      myValue: props.modelValue,
+      loading: null,
+      tinymce: null,
+      elementId: uniqidMd5(),
+    })
+    state.elementId = uniqidMd5()
+    state.init = Object.assign(state.init, props.options)
+    watch(() => state.myValue, value => {
+      ctx.emit('update:modelValue', value)
+    })
+    onMounted(() => {
+      tinymce.init({})
+    })
+
+    function insertTag(e) {
+      const ed = tinymce.get(state.elementId);                // get editor instance
+      ed.execCommand('mceInsertContent', false, '<span class="eadmin-tag" contenteditable="false">' + e.target.innerText + '</span>')
+      console.log(ed.getContent())
+      state.myValue = ed.getContent()
     }
-  },
-  watch: {
-    value(newValue) {
-      this.myValue = newValue
-    },
-    myValue(newValue) {
-      this.$emit('input', newValue)
-    }
-  },
-  mounted() {
-    tinymce.init({})
-  },
-  methods: {
-    upload: function (file) {
+
+    function upload(file) {
       return new Promise((resolve, reject) => {
         if (file instanceof File) {
           // 是文件对象不做处理
@@ -190,62 +215,62 @@ export default {
         var filename = file.name
         var index = filename.lastIndexOf('.')
         var suffix = filename.substring(index + 1, filename.length)
-        filename = this.uniqidMd5() + '.' + suffix
-        if (this.upType == 'oss') {
-          this.oss = new OSS({
-            accessKeyId: this.accessKey,
-            accessKeySecret: this.secretKey,
-            bucket: this.bucket,
-            region: this.region
+        filename = uniqidMd5() + '.' + suffix
+        if (props.upType == 'oss') {
+          state.oss = new OSS({
+            accessKeyId: props.accessKey,
+            accessKeySecret: props.secretKey,
+            bucket: props.bucket,
+            region: props.region
           })
-          this.oss.multipartUpload(filename, file, {
+          state.oss.multipartUpload(filename, file, {
             progress: percentage => {
-              this.loadingText(parseInt(percentage * 100))
+              loadingText(parseInt(percentage * 100))
             }
           }).then(result => {
 
             if (result.res.requestUrls) {
-              this.loading.close()
-              resolve(`${this.domain}/${filename}`)
+              state.loading.close()
+              resolve(`${props.domain}/${filename}`)
             }
           }).catch(err => {
-            this.loading.close()
+            state.loading.close()
             reject('上传失败: ' + err)
             return
           })
-        } else if (this.upType == 'qiniu') {
-          var observable = qiniu.upload(file, filename, this.uploadToken, {
+        } else if (props.upType == 'qiniu') {
+          var observable = qiniu.upload(file, filename, props.uploadToken, {
             fname: filename,
             params: {}
           })
           observable.subscribe({
             next: res => {
-              this.loadingText(parseInt(res.total.percent))
+              loadingText(parseInt(res.total.percent))
             },
             error: err => {
-              this.loading.close()
+              state.loading.close()
               reject('上传失败: ' + err)
               return
             },
             complete: res => {
-              this.loading.close()
-              resolve(`${this.domain}/${filename}`)
+              state.loading.close()
+              resolve(`${props.domain}/${filename}`)
             }
           })
         } else {
           var xhr, formData
           xhr = new XMLHttpRequest()
           xhr.withCredentials = false
-          xhr.open('POST', this.url)
-          xhr.onerror= evt => {
+          xhr.open('POST', props.url)
+          xhr.onerror = evt => {
             reject('上传失败')
           }
           xhr.upload.onprogress = evt => {
             const progress = Math.round(evt.loaded / evt.total * 100) + "%";
-            this.loadingText(progress)
+            loadingText(progress)
           }
           xhr.onload = () => {
-            this.loading.close()
+            state.loading.close()
             var json
             if (xhr.status != 200) {
               reject('上传失败: ' + xhr.status)
@@ -265,26 +290,55 @@ export default {
           formData = new FormData()
           formData.append('file', file, file.name)
           formData.append('filename', filename)
-          xhr.setRequestHeader('Authorization', this.token)
+          xhr.setRequestHeader('Authorization', props.token)
           xhr.send(formData)
         }
       })
-    },
-    loadingText(text){
-      if(this.loading ){
-        this.loading.text = '上传中 '+text
-      }else{
-        this.loading = this.$loading({
-          target:'.tox-dialog__footer',
-          text:'上传中 '+text,
+    }
+
+    function loadingText(text) {
+      if (state.loading) {
+        state.loading.text = '上传中 ' + text
+      } else {
+        state.loading = ElLoading.service({
+          target: '.tox-dialog__footer',
+          text: '上传中 ' + text,
         })
       }
-    },
-    uniqidMd5() {
-      const rand = ('0000' + (Math.random() * Math.pow(36, 4) << 0).toString(36)).slice(-4)
-      return md5(rand)
+    }
+    return {
+      insertTag,
+      ...toRefs(state),
     }
   }
-}
+})
 </script>
+<style lang="scss" scoped>
+@import '@/styles/theme.scss';
+.tags {
+  display: flex;
+  margin-bottom: 5px;
+}
+
+.eadmin-tag {
+  background-color: #ecf5ff;
+  border-color: #d9ecff;
+  color: $theme;
+  display: inline-block;
+  height: 32px;
+  padding: 0 10px;
+  line-height: 30px;
+  font-size: 12px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.eadmin-tag + .eadmin-tag {
+  margin-left: 8px
+}
+</style>
 

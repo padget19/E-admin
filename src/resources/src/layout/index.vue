@@ -1,18 +1,18 @@
 <template>
-    <div :class="['app-wrapper',state.device === 'mobile' ? 'mobile':'']">
-        <div class="headerBg" :style="{background:state.theme == 'light'?'background: #2c2c42':'#409eff'}"></div>
+    <div :class="['app-wrapper',state.theme,state.device === 'mobile' ? 'mobile':'']">
         <sidebar v-if="sidebar.visible"></sidebar>
         <div class="main-container">
             <header-top></header-top>
             <tags-view v-if="state.tagMenuMode"></tags-view>
-            <a-spin wrapperClassName="main-content" :spinning="state.mainLoading" tip="正在刷新...">
+            <a-spin wrapperClassName="main-content" :spinning="state.mainLoading">
               <div class="header-title" v-if="state.mainTitle">
                 <div>
                   <span class="title">{{state.mainTitle}}</span>
                   <span class="desc" v-if="state.mainDescription">{{state.mainDescription}}</span>
                 </div>
                 <breadcrumb class="indexBreadcrumb" style="margin-right: 5px" v-if="state.topMenuMode && state.device != 'mobile'"></breadcrumb>
-                <el-button style="margin-right: 0" v-if="!state.topMenuMode && state.device != 'mobile'" size="mini" @click="back">返回上一页</el-button>
+                <el-button style="margin-right: 0" v-if="!state.topMenuMode && state.device != 'mobile'" size="mini" @click="back">
+                  {{ trans('back') }}</el-button>
               </div>
               <el-backtop target=".main-content"></el-backtop>
               <keep-alive :include="cacheKeys">
@@ -26,6 +26,7 @@
 </template>
 
 <script>
+    import variables  from '../styles/theme.scss';
     import {useRoute, useRouter} from 'vue-router'
     import {defineComponent, inject,computed,h,getCurrentInstance,defineAsyncComponent,resolveComponent,nextTick,watch} from 'vue'
     import headerTop from './headerTop.vue'
@@ -33,6 +34,7 @@
     import breadcrumb from '@/components/breadcrumb.vue'
     import tagsView from './tagsView.vue'
     import { store,action} from '@/store'
+    import {trans} from '@/utils'
     export default defineComponent({
         name: "index",
         components: {
@@ -76,21 +78,21 @@
                 router.back()
             }
             return {
+                variables,
                 cacheKeys,
                 mainComponent,
                 route,
                 state,
                 sidebar,
-                back
+                back,
+                trans
             }
         }
     })
 </script>
 
 <style scoped>
-    .headerBg{
-      height: 60px;;width: 100%;position: fixed
-    }
+
     .header-title .title{
         font-weight: 500;
         font-size: 20px;

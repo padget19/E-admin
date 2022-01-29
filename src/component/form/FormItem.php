@@ -98,7 +98,7 @@ class FormItem extends Field
             $prop  = $this->form->manyRelation() ? $this->form->manyRelation() . '.' . $prop : $prop;
             $this->form->validator()->setTabField($name,$prop);
         }
-        $label = $this->attr('label') . '不能为空';
+        $label = $this->attr('label') . admin_trans('admin.required');
         $this->attr('rules', [
                 'required' => true,
                 'trigger'  => ['change','blur'],

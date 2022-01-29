@@ -294,7 +294,7 @@ class Echart extends Component
                 for ($i = 0; $i < 24; $i++) {
                     $j = $i + 1;
                     $hour = $i < 10 ? '0' . $i : $i;
-                    $xAxis[] = "{$i}点到{$j}点";
+                    $xAxis[] = "{$i}".admin_trans('admin.dian').admin_trans('admin.to').$j.admin_trans('admin.dian');
                     $db = clone $this->db;
                     if ($query instanceof \Closure) {
                         call_user_func($query, $db);
@@ -341,7 +341,7 @@ class Echart extends Component
                 break;
             case 'year':
                 for ($i = 1; $i <= 12; $i++) {
-                    $xAxis[] = $i . '月';
+                    $xAxis[] = $i . admin_trans('admin.month');
                     $db = clone $this->db;
                     if ($query instanceof \Closure) {
                         call_user_func($query, $db);

@@ -44,9 +44,9 @@ class Login extends Controller
                 'username' => 'require',
                 'password' => 'require|min:5'
             ])->message([
-                'username.require' => '登录账号不能为空!',
-                'password.require' => '登录密码不能为空！',
-                'password.min' => '登录密码长度不能少于4位有效字符！',
+                'username.require' => admin_trans('admin.account_not_empty'),
+                'password.require' =>admin_trans('admin.password_not_empty'),
+                'password.min' => admin_trans('admin.password_min_length'),
             ]);
             $valiRes =  $validate->check($data);
             $username = $data['username'];
@@ -58,7 +58,9 @@ class Login extends Controller
                 if($verifyErrorNum >= 10){
                     $this->errorCode(3003);
                 }
-                $user = AdminModel::where('username', $username)->find();
+				$user = AdminModel::where('username', $username)
+					->whereNull('delete_time')
+					->find();
                 if (empty($user) || !password_verify($password,$user['password'])) {
                     $this->app->cache->inc($usernameVerifyKey,1);
                     $this->app->cache->inc($verifyKey,1);
@@ -78,7 +80,7 @@ class Login extends Controller
                 }
                 $tokens = Admin::token()->encode($user);
                 event('UserLogin', $user);
-                admin_success_message('登陆成功')->data($tokens);
+                admin_success_message(admin_trans('admin.login_success'))->data($tokens);
             } else {
                 admin_error_message($validate->getError());
             }
@@ -123,7 +125,7 @@ class Login extends Controller
         if($needBindWx){
             $this->successCode($openid,422);
         }else{
-            admin_success_message('登陆成功')->data($tokens);
+            admin_success_message(admin_trans('admin.login_success'))->data($tokens);
         }
     }
     /**
@@ -134,6 +136,6 @@ class Login extends Controller
     public function logout()
     {
         Admin::token()->logout();
-        admin_success_message('成功退出登陆');
+        admin_success_message(admin_trans('admin.logout'));
     }
 }

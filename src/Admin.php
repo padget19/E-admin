@@ -18,6 +18,7 @@ use Eadmin\controller\Notice;
 use Eadmin\controller\Plug;
 use Eadmin\controller\Queue;
 use Eadmin\controller\ResourceController;
+use Eadmin\service\AuthService;
 use Eadmin\service\MenuService;
 use Eadmin\service\NodeService;
 use Eadmin\service\PlugService;
@@ -45,19 +46,19 @@ class Admin
      */
     public static function sysconf($name, $value = null)
     {
-        if (is_null($value)) {
-            $value = Db::name('SystemConfig')->where('name', $name)->value('value');
-            if (is_null($value)) {
-                return '';
-            } else {
-                $json = json_decode($value,true);
-                if (is_null($json)) {
-                    return $value;
-                }else{
-                    return $json;
-                }
-            }
-        } else {
+		if (is_null($value)) {
+			$value = Db::name('SystemConfig')->where('name', $name)->value('value');
+			if (is_null($value)) {
+				return '';
+			} else {
+				$json = json_decode($value,true);
+				if (is_array($json)) {
+					return $json;
+				}else{
+					return $value;
+				}
+			}
+		} else {
             if(is_array($value)){
                 $value = json_encode($value,JSON_UNESCAPED_UNICODE);
             }
@@ -204,6 +205,14 @@ class Admin
     {
         return app('admin.plug');
     }
+
+    /**
+     * 权限
+     * @return AuthService
+     */
+    public static function auth(){
+        return app('admin.auth');
+    }
     /**
      * 菜单服务
      * @return MenuService
@@ -221,7 +230,7 @@ class Admin
     {
         return new NodeService();
     }
-
+    
     /**
      * 树形
      * @param array $data 数据

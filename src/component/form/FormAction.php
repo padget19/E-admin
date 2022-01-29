@@ -39,10 +39,10 @@ class FormAction extends Component
         parent::__construct();
         $this->form = $form;
         $submitField = $this->form->bindAttr('submit');
-        $this->submitButton = Button::create('保存')->sizeMedium()
+        $this->submitButton = Button::create(admin_trans('admin.save'))->sizeMedium()
             ->type('primary')
             ->event('click', [$submitField => true]);
-        $this->resetButton = Button::create('重置')->sizeMedium();
+        $this->resetButton = Button::create(admin_trans('admin.reset'))->sizeMedium();
     }
 
     /**
@@ -80,7 +80,7 @@ class FormAction extends Component
      */
     public function cancelButton()
     {
-        $this->cancelButton = Button::create('取消')->sizeMedium();
+        $this->cancelButton = Button::create(admin_trans('admin.cancel'))->sizeMedium();
         return $this->cancelButton;
     }
 

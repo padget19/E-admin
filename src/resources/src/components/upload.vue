@@ -17,7 +17,7 @@
                     @mouseover="showImgTool(index)"
                     @mouseout="showImgToolIndex = -1"
             >
-            <span>加载失败</span>
+            <span>{{ trans('el.image.error') }}</span>
           </div>
           </template>
 
@@ -79,18 +79,18 @@
           <template v-if="drag">
              <label class="fileButton" >
               <i class="el-icon-upload" />
-              <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+              <div class="el-upload__text">{{ trans('drag') }}<em>{{ trans('el.upload.clickUpload') }}</em></div>
              </label>
           </template>
           <template v-else>
-            <el-button icon="el-icon-upload">上传文件</el-button>
+            <el-button icon="el-icon-upload">{{ trans('el.upload.file') }}</el-button>
           </template>
            <el-progress v-show="progressShow" style="margin: 13px 0px" :text-inside="true" :stroke-width="15" :percentage="percentage" />
         </slot>
       </span>
       </div>
     </span>
-    <el-dialog  title="资源库" v-model="dialogVisible" :append-to-body="true" width="70%" destroy-on-close>
+    <el-dialog :title="trans('el.upload.resource')" v-model="dialogVisible" :append-to-body="true" width="70%" destroy-on-close>
       <el-row :gutter="10">
         <el-col :md="5" :sm="7" :xs="20" :span="5">
             <render :data="finder" v-model:grid-params="gridParams" v-model:grid-value="gridValue" v-model:dataSource="finerCate"></render>
@@ -102,10 +102,10 @@
 
       <template #footer>
         <div :class="multiple && selection.length > 0 ? 'footer':''">
-          <div v-if="multiple && selection.length > 0">已选中: {{selection.length}}</div>
+          <div v-if="multiple && selection.length > 0">{{ trans('el.upload.selected') }}: {{selection.length}}</div>
           <div>
-            <el-button type="primary" @click="submit">确认</el-button>
-            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="submit">{{ trans('el.upload.confirm') }}</el-button>
+            <el-button @click="dialogVisible = false">{{ trans('el.upload.cancel') }}</el-button>
           </div>
         </div>
       </template>
@@ -116,7 +116,7 @@ import Uploader from 'simple-uploader.js'
 import OSS from 'ali-oss'
 import md5 from 'js-md5'
 import * as qiniu from 'qiniu-js'
-import {fileIcon, lastName, link, refresh} from '@/utils'
+import {fileIcon, lastName, link, refresh,trans} from '@/utils'
 import {defineComponent, reactive, watch, nextTick, toRefs, ref,getCurrentInstance} from "vue";
 import {ElMessage, ElNotification} from 'element-plus'
 import {action} from "@/store";
@@ -251,9 +251,6 @@ export default defineComponent({
       inputValue:'',
     })
     const instance = getCurrentInstance()
-
-
-
     if (props.width != 'auto') {
       state.styleWidth = props.width + 'px'
     } else {
@@ -275,14 +272,9 @@ export default defineComponent({
     } else if (typeof props.modelValue === 'object' && props.modelValue instanceof Array) {
       state.files = props.modelValue
     }
+    watchUploadBtn()
     watch(()=>state.files,val=>{
-      if (!props.multiple && val.length === 1) {
-        state.showUploadBtn = false
-      }else if(props.multiple && props.limit > 0 && val.length >= props.limit){
-        state.showUploadBtn = false
-      } else{
-        state.showUploadBtn = true
-      }
+      watchUploadBtn()
       if(instance.parent && instance.parent.provides && instance.parent.provides.elFormItem){
         instance.parent.provides.elFormItem.formItemMitt?.emit('el.form.change', [val.join(',')])
       }
@@ -494,6 +486,15 @@ export default defineComponent({
         })
       }
     })
+    function watchUploadBtn(){
+      if (!props.multiple && state.files.length === 1) {
+        state.showUploadBtn = false
+      }else if(props.multiple && props.limit > 0 && state.files.length >= props.limit){
+        state.showUploadBtn = false
+      } else{
+        state.showUploadBtn = true
+      }
+    }
     function changeInput(val){
       state.files = val.split(',')
       state.files = state.files.filter(function(s) {
@@ -675,6 +676,7 @@ export default defineComponent({
       }
     }
     return {
+      trans,
       changeInput,
       btn,
       submit,

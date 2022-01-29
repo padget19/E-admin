@@ -126,7 +126,6 @@ $themes: (
   @include background_color(black);
 }
 .sidebar-container{
-  box-shadow: none !important;
   @include font_color(font);
   @include background_color(black);
 }
@@ -147,7 +146,7 @@ input{
   @include background_color(black);
 }
 .el-button{
-  border: none;
+
   @include font_color(white);
 }
 .el-button:hover{

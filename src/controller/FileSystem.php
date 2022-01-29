@@ -13,7 +13,7 @@ use Eadmin\model\AdminModel;
 use Eadmin\model\SystemFile;
 use Eadmin\model\SystemFileCate;
 use Eadmin\service\FileService;
-use Eadmin\service\FileSystemService;
+
 use think\db\Query;
 
 class FileSystem extends Controller
@@ -46,7 +46,7 @@ class FileSystem extends Controller
                 return $item;
             })->toArray();
         $fileSystem = new \Eadmin\component\basic\FileSystem($data);
-        $fileSystem->initPath(FileSystemService::instance()->getPath())
+        $fileSystem->initPath(\think\facade\Filesystem::disk('local')->path('/'))
             ->attr('height', '350px')
             ->attr('display','menu')
             ->uploadFinder();
@@ -74,33 +74,34 @@ class FileSystem extends Controller
     }
     public function cateForm()
     {
+
         $form = new Form(new SystemFileCate);
         $options = Admin::menu()->listOptions(SystemFileCate::where('admin_id',Admin::id())->select()->toArray());
-        $form->select('pid', '分类')
-            ->options([0 => '顶级分类'] + array_column($options, 'label', 'id'))
+        $form->select('pid', admin_trans('filesystem.labels.cate'))
+            ->options([0 => admin_trans('filesystem.topCate')] + array_column($options, 'label', 'id'))
             ->required();
-        $form->text('name', '分类名称')->required();
-        $form->radio('per_type', '权限')
-            ->options([1=>'仅自己',0=>'所有人'])
+        $form->text('name',  admin_trans('filesystem.labels.name'))->required();
+        $form->radio('per_type', admin_trans('filesystem.labels.permission'))
+            ->options(admin_trans('filesystem.options.per_type'))
             ->default(1);
-        $form->switch('status', '显示')->default(1);
-        $form->number('sort', '排序')->default(0);
+        $form->switch('status',  admin_trans('filesystem.labels.show'))->default(1);
+        $form->number('sort',  admin_trans('filesystem.labels.sort'))->default(0);
         $form->hidden('admin_id')->default(Admin::id());
         return $form;
     }
     //移动分类
     public function moveCate($ids,$cate_id){
         SystemFile::whereIn('id',$ids)->update(['cate_id'=>$cate_id]);
-        admin_success('成功', '文件移动成功');
+        admin_success(admin_trans('filesystem.success'), admin_trans('filesystem.moveFolderComplete'));
     }
     //新建文件夹
     public function mkdir($path)
     {
         if (is_dir($path)) {
-            admin_error_message('文件夹已存在');
+            admin_error_message(admin_trans('filesystem.folderExist'));
         }
         mkdir($path, 0755);
-        admin_success('成功', '新建文件夹成功');
+        admin_success(admin_trans('filesystem.success'), admin_trans('filesystem.newFolderComplete'));
     }
 
     //重命名文件夹
@@ -109,17 +110,17 @@ class FileSystem extends Controller
         if (is_dir($path)) {
             $newPath = dirname($path) . DIRECTORY_SEPARATOR . $name;
             if (is_dir($newPath)) {
-                admin_error_message('重命名文件夹名称已存在');
+                admin_error_message(admin_trans('filesystem.folderRenameExist'));
             }
             rename($path, $newPath);
-            admin_success('成功', '文件夹重命名成功');
+            admin_success(admin_trans('filesystem.success'), admin_trans('filesystem.folderRenameComplete'));
         }
-        admin_error_message('文件夹不存在');
+        admin_error_message(admin_trans('filesystem.folderNotExist'));
     }
 
     public function del($ids)
     {
         SystemFile::whereIn('id',$ids)->update(['is_delete'=>1]);
-        admin_success('成功', '删除完成');
+        admin_success(admin_trans('filesystem.success'), admin_trans('filesystem.deleleComplete'));
     }
 }

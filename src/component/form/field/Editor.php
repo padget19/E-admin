@@ -14,6 +14,10 @@ use Eadmin\component\form\Field;
 use Overtrue\Flysystem\Qiniu\Plugins\UploadToken;
 use think\facade\Filesystem;
 
+/**
+ * @method options(array $value) 配置选项
+ * @method tags(array $value) 设置标记元素
+ */
 class Editor extends Field
 {
     protected $name = 'EadminEditor';
@@ -21,7 +25,7 @@ class Editor extends Field
     public function __construct($field = null, string $value = '')
     {
         parent::__construct($field, $value);
-        $this->attr('url',  '/eadmin/upload');
+        $this->attr('url', '/eadmin/upload');
         $this->attr('token', Admin::token()->get());
         $this->disk(config('admin.uploadDisks'));
     }
@@ -32,9 +36,9 @@ class Editor extends Field
      */
     public function disk($diskType)
     {
-        $config          = config('filesystem.disks.' . $diskType);
-        $uptype          = $config['type'];
-        $accessKey       = '';
+        $config = config('filesystem.disks.' . $diskType);
+        $uptype = $config['type'];
+        $accessKey = '';
         $accessKeySecret = '';
         $this->attr('upType', $uptype);
         if ($uptype == 'qiniu') {
@@ -75,15 +79,31 @@ class Editor extends Field
         return $this;
     }
 
-	/**
-	 * 编辑器自定义选项
-	 * @param string $tool
-	 */
+    /**
+     * textarea模式
+     * @param int $height 高度
+     * @return $this
+     */
+    public function textarea($height = 150)
+    {
+        $this->height($height);
+        $this->options([
+            'menubar' => false,
+            'toolbar' => false,
+            'statusbar' => false,
+        ]);
+        return $this;
+    }
+
+    /**
+     * 编辑器自定义选项
+     * @param string $tool
+     */
     public function toolbar($tool = 'undo redo | styleselect | bold italic |
 				alignleft | aligncenter | alignright | bullist | numlist | outdent | indent | removeformat | subscript | superscript
 				fontsize_formats | cut | copy | paste | forecolor')
-	{
-		$this->attr('toolbar', $tool);
-		return $this;
-	}
+    {
+        $this->attr('toolbar', $tool);
+        return $this;
+    }
 }

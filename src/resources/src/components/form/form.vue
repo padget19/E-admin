@@ -220,39 +220,39 @@
                                 method: props.setActionMethod,
                                 data: submitData()
                             }).then(res=>{
-                                if(res.code === 422){
-                                    for (let field in res.data){
-                                        if(res.index){
-                                            let fields = field.split('.')
-                                            let name = fields.shift()
-                                            let f = fields.shift()
-                                            if(!proxyData[ctx.attrs.validator][name]){
-                                                proxyData[ctx.attrs.validator][name] = []
-                                            }
-                                            if(!proxyData[ctx.attrs.validator][name][res.index]){
-                                                proxyData[ctx.attrs.validator][name][res.index] = {}
-                                            }
-                                            proxyData[ctx.attrs.validator][name][res.index][f] = res.data[field]
-                                        }else{
-                                            const validatorField = field.replace('.','_')
-                                            proxyData[ctx.attrs.validator][validatorField] = res.data[field]
-                                        }
+                              if(res.code === 422){
+                                for (let field in res.data){
+                                  if(res.index){
+                                    let fields = field.split('.')
+                                    let name = fields.shift()
+                                    let f = fields.shift()
+                                    if(!proxyData[ctx.attrs.validator][name]){
+                                      proxyData[ctx.attrs.validator][name] = []
                                     }
-                                    if(res.tabIndex){
-                                        ctx.attrs.model[ctx.attrs.tabField] = res.tabIndex
+                                    if(!proxyData[ctx.attrs.validator][name][res.index]){
+                                      proxyData[ctx.attrs.validator][name][res.index] = {}
                                     }
-                                    scrollIntoView()
-                                }else  if(res.code === 412){
-                                    validateStatus.value = true
-                                }else{
-                                    if(res.type == 'step'){
-                                        stepResult.value = res.data
-                                        ctx.emit('update:step',++props.step)
-                                    }
-                                    ctx.emit('success',res)
-                                    ctx.emit('PopupRefresh')
-                                    ctx.emit('gridRefresh')
+                                    proxyData[ctx.attrs.validator][name][res.index][f] = res.data[field]
+                                  }else{
+                                    const validatorField = field.replace('.','_')
+                                    proxyData[ctx.attrs.validator][validatorField] = res.data[field]
+                                  }
                                 }
+                                if(res.tabIndex){
+                                  ctx.attrs.model[ctx.attrs.tabField] = res.tabIndex
+                                }
+                                scrollIntoView()
+                              }else  if(res.code === 412){
+                                validateStatus.value = true
+                              }else{
+                                if(res.type == 'step'){
+                                  stepResult.value = res.data
+                                  ctx.emit('update:step',++props.step)
+                                }
+                                ctx.emit('success',res)
+                                ctx.emit('PopupRefresh')
+                                ctx.emit('gridRefresh')
+                              }
                             })
                         }else{
                             if(ctx.attrs.tabField){

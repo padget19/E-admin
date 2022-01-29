@@ -442,7 +442,8 @@ class PlugService
     public function uninstall($name, $path)
     {
         $this->dataMigrate('rollback', $path);
-        FileSystemService::instance()->delFiels($path);
+		$filesystem = new \Symfony\Component\Filesystem\Filesystem;
+		$filesystem->remove($path);
         Db::name($this->table)->where('name', $name)->delete();
         Db::name('system_menu')->where('mark', $name)->delete();
         Db::name('system_config')->where('mark', $name)->delete();
